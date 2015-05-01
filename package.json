@@ -1,6 +1,6 @@
 {
   "name": "autolib",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Tools for personal information retrieving.",
   "repository": {
     "type": "git",
@@ -20,6 +20,7 @@
   "bin": {
     "autolib": "bin/index.js"
   },
+  "main": "src/session.js",
   "preferGlobal": true,
   "engines": {
     "node": ">=0.10.0"
