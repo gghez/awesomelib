@@ -4,24 +4,34 @@ var querystring = require('querystring');
 var cheerio = require('cheerio');
 var Q = require('q');
 
-module.exports.download = function(number, cookiesContainer) {
+module.exports.download = function(options) {
   var defer = Q.defer();
+
+  var path = '/account/bills/' + number + '/';
+
+  options.debug && console.log('[URL]', path);
 
   var req = https.request({
     method: 'GET',
     host: 'www.autolib.eu',
-    path: '/account/bills/' + number + '/',
+    path: path,
     headers: {
-      'Cookie': utils.stringifyCookies(cookiesContainer),
+      'Cookie': utils.stringifyCookies(options.cookies),
       'Accept-Language': 'en-US,en'
     }
-  }, function(res) {
+  });
+
+  req.on('response', function(res) {
+    options.debug && console.log('HTTP status', res.statusCode);
+
     utils.respBody(res).then(function(body) {
       defer.resolve(body);
     }).catch(function(err) {
       defer.reject('Body parsing failed.', err);
     })
   });
+
+  utils.setTimeout(req, options.timeout || 5000);
 
   req.on('error', function(err) {
     defer.reject('Request Error', err);
@@ -32,35 +42,40 @@ module.exports.download = function(number, cookiesContainer) {
   return defer.promise;
 };
 
-module.exports.filter = function(start, end, cookiesContainer) {
+module.exports.filter = function(options) {
 
   var defer = Q.defer();
 
-  if (start === undefined) {
+  if (options.start === undefined) {
     var now = new Date();
-    start = now.getMonth() + '/01/' + now.getFullYear();
+    options.start = now.getMonth() + '/01/' + now.getFullYear();
   }
 
-  if (end === undefined) {
+  if (options.end === undefined) {
     var now = new Date();
     var d = new Date(now.getFullYear(), now.getMonth(), 0);
-    end = now.getMonth() + '/' + d.getDate() + '/' + now.getFullYear();
+    options.end = now.getMonth() + '/' + d.getDate() + '/' + now.getFullYear();
   }
 
-  var queryString = querystring.stringify({
-    start: start,
-    end: end
+  var path = '/account/bills/?' + querystring.stringify({
+    start: options.start,
+    end: options.end
   });
+
+  options.debug && console.log('[URL]', path);
 
   var req = https.request({
     method: 'GET',
     host: 'www.autolib.eu',
-    path: '/account/bills/?' + queryString,
+    path: path,
     headers: {
-      'Cookie': utils.stringifyCookies(cookiesContainer),
+      'Cookie': utils.stringifyCookies(options.cookies),
       'Accept-Language': 'en-US,en'
     }
-  }, function(res) {
+  });
+
+  req.on('response', function(res) {
+    options.debug && console.log('HTTP status', res.statusCode);
 
     utils.respBody(res).then(function(body) {
       var html = body.toString();
@@ -77,12 +92,16 @@ module.exports.filter = function(start, end, cookiesContainer) {
 
       defer.resolve(bills);
     }).catch(function(err) {
-      defer.reject('Body Parsing failed.', err);
+      options.debug && console.error('Body parsing error.');
+      defer.reject(err);
     });
   });
 
+  utils.setTimeout(req, options.timeout || 5000);
+
   req.on('error', function(err) {
-    defer.reject('Request Error', err);
+    options.debug && console.error('Request error.');
+    defer.reject(err);
   });
 
   req.end();

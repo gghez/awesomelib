@@ -4,8 +4,9 @@ var utils = require('./utils');
 var rentals = require('./rentals');
 var bills = require('./bills');
 
-function Session() {
+function Session(debug) {
   this.cookies = null;
+  this.debug = debug;
   this.errorHandler = function(err) {
     console.error(err);
     process.kill(process.pid);
@@ -18,37 +19,49 @@ Session.prototype.error = function(callback) {
 
 Session.prototype.login = function(username, password) {
   var _this = this;
-  return login(username, password).then(function(cookies) {
+  return login({
+    username: username,
+    password: password,
+    debug: this.debug
+  }).then(function(cookies) {
     _this.cookies = cookies;
-  });
+  }).catch(this.errorHandler.bind(this));
 };
 
 Session.prototype.info = function() {
-  var _this = this;
-  return info(this.cookies).catch(function(err) {
-    _this.errorHandler(err);
-  });
+  return info({
+    cookies: this.cookies,
+    debug: this.debug
+  }).catch(this.errorHandler.bind(this));
 };
 
 Session.prototype.rentals = function(start, end) {
-  var _this = this;
-  return rentals(start, end, this.cookies).catch(function(err) {
-    _this.errorHandler(err);
-  });
+  return rentals({
+      start: start,
+      end: end,
+      cookies: this.cookies,
+      debug: this.debug
+    })
+    .catch(this.errorHandler.bind(this));
 };
 
 Session.prototype.bills = function(start, end) {
-  var _this = this;
-  return bills.filter(start, end, this.cookies).catch(function(err) {
-    _this.errorHandler(err);
-  });
+  return bills.filter({
+      start: start,
+      end: end,
+      cookies: this.cookies,
+      debug: this.debug
+    })
+    .catch(this.errorHandler.bind(this));
 };
 
 Session.prototype.bill = function(number) {
-  var _this = this;
-  return bills.download(number, this.cookies).catch(function(err) {
-    _this.errorHandler(err);
-  });
+  return bills.download({
+      number: number,
+      cookies: this.cookies,
+      debug: this.debug
+    })
+    .catch(this.errorHandler.bind(this));
 };
 
 module.exports = Session;

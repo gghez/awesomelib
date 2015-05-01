@@ -3,17 +3,25 @@ var utils = require('./utils');
 var https = require('https');
 var cheerio = require('cheerio');
 
-module.exports = function (cookiesContainer) {
+module.exports = function(options) {
   var defer = Q.defer();
+
+  var path = '/account/information/';
+
+  options.debug && console.log('[URL]', path);
 
   var req = https.request({
     method: 'GET',
     host: 'www.autolib.eu',
-    path: '/account/information/',
+    path: path,
     headers: {
-      'Cookie': utils.stringifyCookies(cookiesContainer)
+      'Cookie': utils.stringifyCookies(options.cookies)
     }
-  }, function(res) {
+  });
+
+  req.on('response', function(res) {
+    options.debug && console.log('HTTP status', res.statusCode);
+
     utils.respBody(res).then(function(body) {
       var html = body.toString();
       var $ = cheerio.load(html);
@@ -36,10 +44,10 @@ module.exports = function (cookiesContainer) {
       defer.resolve(userInfo);
     }).catch(function(err) {
       defer.reject(err);
-    }).then(function(){
-      //res.close();
     });
   });
+
+  utils.setTimeout(req, options.timeout || 5000);
 
   req.on('error', function(err) {
     defer.reject(err);

@@ -4,45 +4,51 @@ var querystring = require('querystring');
 var cheerio = require('cheerio');
 var Q = require('q');
 
-module.exports = function(start, end, cookiesContainer) {
+module.exports = function(options) {
 
-  function rentalsPage(page, start, end) {
+  if (options.start === undefined) {
+    var now = new Date();
+    options.start = (now.getMonth() + 1) + '/01/' + now.getFullYear();
+  }
+
+  if (options.end === undefined) {
+    var now = new Date();
+    var d = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    options.end = (now.getMonth() + 1) + '/' + d.getDate() + '/' + now.getFullYear();
+  }
+
+  function rentalsPage(page) {
     var defer = Q.defer();
 
-    if (start === undefined) {
-      var now = new Date();
-      start = now.getMonth() + '/01/' + now.getFullYear();
-    }
-
-    if (end === undefined) {
-      var now = new Date();
-      var d = new Date(now.getFullYear(), now.getMonth(), 0);
-      end = now.getMonth() + '/' + d.getDate() + '/' + now.getFullYear();
-    }
-
-    var queryString = querystring.stringify({
-      start: start,
-      end: end,
+    var path = '/account/history/rentals/?' + querystring.stringify({
+      start: options.start,
+      end: options.end,
       action: 'refine',
       page: page
     });
 
+    options.debug && console.log('[URL]', path);
+
     var req = https.request({
       method: 'GET',
       host: 'www.autolib.eu',
-      path: '/account/history/rentals/?' + queryString,
+      path: path,
       headers: {
-        'Cookie': utils.stringifyCookies(cookiesContainer),
+        'Cookie': utils.stringifyCookies(options.cookies),
         'Accept-Language': 'en-US,en'
       }
-    }, function(res) {
+    });
+
+    req.on('response', function(res) {
+      options.debug && console.log('HTTP status', res.statusCode);
 
       utils.respBody(res).then(function(body) {
         var html = body.toString();
         var $ = cheerio.load(html);
 
+        var hasPager = $('.pager').length;
         var currentPage = $('.pager > li > strong').text();
-        if (currentPage != page) {
+        if ((hasPager || page > 1) && currentPage != page) {
           defer.reject('No more page.');
         } else {
           var rentals = $('#rentals-history > tbody > tr').map(function(i, tr) {
@@ -55,20 +61,24 @@ module.exports = function(start, end, cookiesContainer) {
             };
           }).get();
 
-          rentalsPage(page + 1, start, end).then(function(nextRentals) {
+          rentalsPage(page + 1).then(function(nextRentals) {
             defer.resolve(nextRentals.concat(rentals));
           }).catch(function(err) {
-            console.error('Rental page', page + 1, 'failed.', err);
+            options.debug && console.error('Rental page', page + 1, 'failed.', err);
             defer.resolve(rentals);
           });
         }
       }).catch(function(err) {
-        defer.reject('Body Parsing failed.', err);
+        options.debug && console.error('Body Parsing failed.');
+        defer.reject(err);
       })
     });
 
+    utils.setTimeout(req, options.timeout || 5000);
+
     req.on('error', function(err) {
-      defer.reject('Request Error', err);
+      options.debug && console.error('Request Error');
+      defer.reject(err);
     });
 
     req.end();
@@ -76,5 +86,5 @@ module.exports = function(start, end, cookiesContainer) {
     return defer.promise;
   }
 
-  return rentalsPage(1, start, end);
+  return rentalsPage(1);
 };
