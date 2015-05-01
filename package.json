@@ -1,6 +1,6 @@
 {
   "name": "autolib",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Tools for personal information retrieving.",
   "repository": {
     "type": "git",
@@ -17,14 +17,10 @@
   },
   "license": "MIT",
   "bin": {
-    "autolib": "bin/index"
+    "autolib": "bin/index.js"
   },
   "preferGlobal": true,
   "engines": {
     "node": ">=0.10.0"
-  },
-  "files": [
-    "src/*.js",
-    "bin/index.js"
-  ]
+  }
 }
