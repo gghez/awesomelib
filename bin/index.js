@@ -17,7 +17,7 @@ var getopt = require('node-getopt').create([
 ]).bindHelp();
 var opt = getopt.parseSystem();
 
-var Session = require('./src/session');
+var Session = require('../src/session');
 
 if (!opt.options.username || !opt.options.password) {
   console.error('Missing username and password.');
