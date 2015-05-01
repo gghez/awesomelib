@@ -1,6 +1,6 @@
 {
   "name": "autolib",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Tools for personal information retrieving.",
   "repository": "https://github.com/gghez/autolib",
   "dependencies": {
@@ -19,5 +19,9 @@
   "preferGlobal": true,
   "engines": {
     "node": ">=0.10.0"
-  }
+  },
+  "files":[
+    "src/*.js",
+    "bin/index.js"
+  ]
 }
