@@ -1,8 +1,11 @@
 {
   "name": "autolib",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Tools for personal information retrieving.",
-  "repository": "https://github.com/gghez/autolib",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/gghez/autolib.git"
+  },
   "dependencies": {
     "cheerio": "^0.19.0",
     "node-getopt": "^0.2.3",
@@ -20,7 +23,7 @@
   "engines": {
     "node": ">=0.10.0"
   },
-  "files":[
+  "files": [
     "src/*.js",
     "bin/index.js"
   ]
