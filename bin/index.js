@@ -18,12 +18,15 @@ var getopt = require('node-getopt').create([
   ['', 'mail-transport=ARG', 'Specify a preconfigured mail transport.'],
   ['', 'mail-user=ARG', 'Specify SMTP auth username.'],
   ['', 'mail-pass=ARG', 'Specify SMTP auth password.'],
+  ['', 'service', 'Instianciate a website controller.'],
   ['d', 'debug', 'Activate debug mode.'],
   ['', 'help', 'Display this help']
 ]).bindHelp();
 var opt = getopt.parseSystem();
 
-if (!opt.options.username || !opt.options.password) {
+if (opt.options.service) {
+  require('../src/service').run();
+} else if (!opt.options.username || !opt.options.password) {
   console.error('Missing username and password.');
   getopt.showHelp();
 } else {

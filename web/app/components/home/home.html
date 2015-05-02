@@ -1,0 +1,13 @@
+<div class="al-usage-block">
+  <span class="al-usage-label">Prev month</span>
+  <span class="al-usage-amount">{{usage.prev}} €</span>
+</div>
+
+<div class="al-usage-block">
+  <span class="al-usage-label">Current month</span>
+  <span class="al-usage-amount">{{usage.cur}} €</span>
+  <span class="al-usage-diff" ng-class="{
+    'text-success':usage.cur - usage.prev < 0,
+    'text-danger':usage.cur - usage.prev > 0
+  }">{{ usage.cur - usage.prev }} €</span>
+</div>

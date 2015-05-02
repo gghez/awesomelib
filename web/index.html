@@ -1,0 +1,39 @@
+<!doctype html>
+<html ng-app="awesomelib">
+
+<head>
+  <title>awesomelib'</title>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <!-- JQUERY -->
+  <script src="assets/libs/jquery/dist/jquery.min.js"></script>
+
+  <!-- BOOTSTRAP -->
+  <link rel="stylesheet" href="assets/libs/bootstrap/dist/css/bootstrap.min.css">
+  <script src="assets/libs/bootstrap/dist/js/bootstrap.min.js"></script>
+
+  <!-- ANGULAR -->
+  <script src="assets/libs/angular/angular.min.js"></script>
+  <script src="assets/libs/angular-route/angular-route.min.js"></script>
+
+  <!-- APP -->
+  <script src="assets/js/app.js"></script>
+  <link rel="stylesheet" href="assets/css/styles.css">
+
+</head>
+
+<body>
+  <header>
+  </header>
+
+  <section class="container">
+    <ng-view></ng-view>
+  </section>
+
+  <footer>
+  </footer>
+</body>
+
+</html>
