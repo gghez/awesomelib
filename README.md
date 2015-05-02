@@ -10,6 +10,21 @@ npm install -g autolib
 
 ## Examples
 
+### Run as web application
+
+Use PORT env variable or default port 3788.
+
+```
+autolib --service
+```
+
+Available routes:
+- `/rest/auth` Authenticate on Autolib authentication platform.
+- `/rest/status` Get current authenticated status.
+- `/rest/usage` Get current rental usage.
+
+Web application available at: `http://localhost:3788/`
+
 ### Display current month rentals
 
 ```
