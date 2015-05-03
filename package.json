@@ -1,6 +1,6 @@
 {
   "name": "autolib",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Tools for personal information retrieving.",
   "repository": {
     "type": "git",
@@ -27,7 +27,7 @@
   },
   "author": "Gregory GHEZ",
   "scripts": {
-    "postinstall": "./node_modules/.bin/grunt compile",
+    "postinstall": "grunt compile",
     "start": "node bin/index.js --service"
   },
   "license": "MIT",
