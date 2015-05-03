@@ -5,8 +5,8 @@ module.exports.cookiesContainer = function(headerCookies) {
   if (typeof headerCookies == 'string'){
     headerCookies = headerCookies.split(';');
   }
-  
-  return headerCookies.reduce(function(prev, cur) {
+
+  return (headerCookies || []).reduce(function(prev, cur) {
     var cParts = cur.split('=');
     var name = cParts[0].trim();
     var value = cParts[1].split(';')[0].trim();
