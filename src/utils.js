@@ -2,6 +2,10 @@ var Q = require('q');
 var nodemailer = require('nodemailer');
 
 module.exports.cookiesContainer = function(headerCookies) {
+  if (typeof headerCookies == 'string'){
+    headerCookies = headerCookies.split(';');
+  }
+  
   return headerCookies.reduce(function(prev, cur) {
     var cParts = cur.split('=');
     var name = cParts[0].trim();

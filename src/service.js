@@ -10,14 +10,6 @@ app.use('/assets/libs/', express.static(__dirname + '/../node_modules/'));
 app.use('/', express.static(__dirname + '/../web/'));
 
 app.use('/rest/', require('./routes/auth'));
-app.use('/rest/', function(req, res, next) {
-  if (!req.user) {
-    res.sendStatus(401);
-  } else {
-    next();
-  }
-});
-
 app.use('/rest/usage', require('./routes/usage'));
 app.get('/rest/status', function(req, res, next) {
   res.send({

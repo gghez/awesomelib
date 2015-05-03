@@ -2,9 +2,12 @@ var router = require('express').Router();
 var bodyParser = require('body-parser');
 var login = require('../login');
 var crypto = require('crypto');
+var utils = require('../utils');
 
 router.use(function(req, res, next) {
-  var token = req.header('AL-TOKEN');
+  var cookies = utils.cookiesContainer(req.header('Cookie'));
+  var token = req.header('AL-TOKEN') || cookies['AL-TOKEN'];
+
   if (token) {
     var users = req.app.get('db').collection('users');
 
