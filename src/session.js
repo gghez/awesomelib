@@ -3,6 +3,8 @@ var info = require('./info');
 var utils = require('./utils');
 var rentals = require('./rentals');
 var bills = require('./bills');
+var stations = require('./stations');
+var car = require('./car');
 
 function Session(debug) {
   this.cookies = null;
@@ -58,6 +60,24 @@ Session.prototype.bills = function(start, end) {
 Session.prototype.bill = function(number) {
   return bills.download({
       number: number,
+      cookies: this.cookies,
+      debug: this.debug
+    })
+    .catch(this.errorHandler.bind(this));
+};
+
+Session.prototype.near = function(address) {
+  return stations.near({
+      address: address,
+      cookies: this.cookies,
+      debug: this.debug
+    })
+    .catch(this.errorHandler.bind(this));
+};
+
+Session.prototype.reserve = function(stationId) {
+  return car.reserve({
+      stationId: stationId,
       cookies: this.cookies,
       debug: this.debug
     })

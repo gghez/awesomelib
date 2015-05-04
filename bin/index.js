@@ -11,6 +11,8 @@ var getopt = require('node-getopt').create([
   ['', 'rentals', 'Display rentals.'],
   ['', 'bills', 'Display bills.'],
   ['', 'bill=ARG', 'Download bill.'],
+  ['', 'near=ARG', 'Stations near specified address.'],
+  ['', 'reserve=ARG', 'Reserve a car at specified station.'],
   ['', 'start=ARG', 'Filter with start date (US format: mm/dd/yyyy).'],
   ['', 'end=ARG', 'Filter with end date (US format: mm/dd/yyyy).'],
   ['', 'mail=ARG', 'Mail a preconfigured status.'],
@@ -103,6 +105,18 @@ if (opt.options.service) {
 
       session.bill(opt.options.bill).then(function(bill) {
         console.log(bill);
+      });
+    } else if (opt.options.near) {
+      opt.options.debug && console.log('SWITCH near.');
+
+      session.near(opt.options.near).then(function(stations) {
+        console.log(stations);
+      });
+    } else if (opt.options.reserve) {
+      opt.options.debug && console.log('SWITCH reserve.');
+
+      session.reserve(opt.options.reserve).then(function(status) {
+        console.log(status);
       });
     } else {
       getopt.showHelp();

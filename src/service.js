@@ -11,6 +11,8 @@ app.use('/', express.static(__dirname + '/../web/'));
 
 app.use('/rest/', require('./routes/auth'));
 app.use('/rest/usage', require('./routes/usage'));
+app.use('/rest/stations', require('./routes/stations'));
+
 app.get('/rest/status', function(req, res, next) {
   res.send({
     user: req.user
