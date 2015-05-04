@@ -2,3 +2,5 @@ node_modules
 *.log
 bower_components
 .data
+web/assets
+*~
