@@ -1,0 +1,16 @@
+<table class="table table-hover table-bordered">
+  <thead>
+    <tr>
+      <th>Run</th>
+      <th>Duration</th>
+      <th>Amount</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr ng-repeat="rental in rentals">
+      <td>{{ rental.start }}<br/>from {{ rental.from }} to {{ rental.to }}</td>
+      <td>{{ rental.duration }}</td>
+      <td>{{ rental.amount }}</td>
+    </tr>
+  </tbody>
+</table>

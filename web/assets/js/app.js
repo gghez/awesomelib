@@ -16,6 +16,11 @@ angular.module('awesomelib').config(['$routeProvider', function($routeProvider) 
     controller: 'statusController'
   });
 
+  $routeProvider.when('/rentals', {
+    templateUrl: 'app/components/rentals/rentals.html',
+    controller: 'rentalsController'
+  });
+
   $routeProvider.otherwise({
     redirectTo: '/'
   });
@@ -33,11 +38,19 @@ angular.module('awesomelib').controller('loginController', ['$scope', 'login', '
 
   $scope.login = function(){
     login.authenticate($scope.username, $scope.password).then(function(auth){
-      $location.path('/status');
+      $location.path('/');
     }).catch(function(resp){
       $scope.error = resp.data;
     });
   };
+
+}]);
+
+angular.module('awesomelib').controller('rentalsController', ['$scope', 'rentals', function($scope, rentals) {
+
+  rentals.get().then(function(rentals) {
+    $scope.rentals = rentals;
+  });
 
 }]);
 
@@ -68,6 +81,16 @@ angular.module('awesomelib').service('login', ['$http', '$cookies', function($ht
       }).then(function(resp) {
         var token = resp.data.token;
         $cookies['AL-TOKEN'] = token;
+      });
+    }
+  };
+}]);
+
+angular.module('awesomelib').service('rentals', ['$http', function($http) {
+  return {
+    get: function() {
+      return $http.get('/rest/rentals').then(function(resp) {
+        return resp.data;
       });
     }
   };

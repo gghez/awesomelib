@@ -16,6 +16,11 @@ angular.module('awesomelib').config(['$routeProvider', function($routeProvider) 
     controller: 'statusController'
   });
 
+  $routeProvider.when('/rentals', {
+    templateUrl: 'app/components/rentals/rentals.html',
+    controller: 'rentalsController'
+  });
+
   $routeProvider.otherwise({
     redirectTo: '/'
   });

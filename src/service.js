@@ -10,6 +10,7 @@ app.use('/assets/libs/', express.static(__dirname + '/../node_modules/'));
 app.use('/', express.static(__dirname + '/../web/'));
 
 app.use('/rest/', require('./routes/auth'));
+app.use('/rest/rentals', require('./routes/rentals'));
 app.use('/rest/usage', require('./routes/usage'));
 app.use('/rest/stations', require('./routes/stations'));
 
