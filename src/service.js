@@ -4,7 +4,7 @@ var morgan = require('morgan');
 
 var app = express();
 
-app.use(morgan('dev'));
+app.use(morgan('combined', { immediate: true}));
 
 app.use('/assets/libs/', express.static(__dirname + '/../node_modules/'));
 app.use('/', express.static(__dirname + '/../web/'));
