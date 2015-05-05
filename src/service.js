@@ -34,7 +34,9 @@ app.use(function(err, req, res, next) {
   res.status(500).send(err);
 });
 
-module.exports.run = function() {
+module.exports.run = function(options) {
+  app.set('debug', options.debug);
+  
   mongodb.MongoClient.connect('mongodb://localhost:27017/autolib', function(err, db) {
     if (err) {
       console.error('Failed to connect database.', err);

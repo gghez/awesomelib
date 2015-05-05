@@ -27,7 +27,9 @@ var getopt = require('node-getopt').create([
 var opt = getopt.parseSystem();
 
 if (opt.options.service) {
-  require('../src/service').run();
+  require('../src/service').run({
+    debug: opt.options.debug
+  });
 } else if (!opt.options.username || !opt.options.password) {
   console.error('Missing username and password.');
   getopt.showHelp();

@@ -28,17 +28,18 @@ router.use(function(req, res, next) {
 });
 
 router.post('/auth', bodyParser.json(), function(req, res, next) {
-  var creds = req.body;
+  var loginOptions = req.body;
+  loginOptions.debug = req.app.get('debug');
 
   var users = req.app.get('db').collection('users');
 
-  login(creds).then(function(cookies) {
+  login(loginOptions).then(function(cookies) {
     var shasum = crypto.createHash('sha1');
     shasum.update(new Date().toString());
     var token = shasum.digest('hex');
 
     users.update({
-      username: creds.username
+      username: loginOptions.username
     }, {
       $set: {
         cookies: cookies,
@@ -53,7 +54,7 @@ router.post('/auth', bodyParser.json(), function(req, res, next) {
         });
       } else {
         users.insert({
-          username: creds.username,
+          username: loginOptions.username,
           cookies: cookies,
           token: token
         }, function(err, result) {

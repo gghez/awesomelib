@@ -11,7 +11,8 @@ router.get('/', function(req, res, next) {
   Q.all([rentals({
       start: prevStart,
       end: prevEnd,
-      cookies: req.user.cookies
+      cookies: req.user.cookies,
+      debug: req.app.get('debug')
     }), rentals({
       cookies: req.user.cookies
     })])

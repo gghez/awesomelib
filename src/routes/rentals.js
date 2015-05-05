@@ -5,7 +5,8 @@ var rentals = require('../rentals');
 router.get('/', function(req, res, next) {
 
   rentals({
-    cookies: req.user.cookies
+    cookies: req.user.cookies,
+    debug: req.app.get('debug')
   }).then(function(rentals) {
     res.send(rentals);
   }).catch(next);
