@@ -16,9 +16,11 @@ router.use(function(req, res, next) {
     }).toArray(function(err, docs) {
       if (err) {
         next(err);
-      } else if (docs && docs.length) {
-        req.user = docs[0];
-        delete req.user._id;
+      } else {
+        if (docs && docs.length) {
+          req.user = docs[0];
+          delete req.user._id;
+        }
         next();
       }
     });

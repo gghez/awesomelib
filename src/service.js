@@ -4,7 +4,7 @@ var morgan = require('morgan');
 
 var app = express();
 
-app.use(morgan('combined', { immediate: true}));
+app.use(morgan('common'));
 
 app.use('/assets/libs/', express.static(__dirname + '/../node_modules/'));
 app.use('/', express.static(__dirname + '/../web/'));
@@ -36,7 +36,7 @@ app.use(function(err, req, res, next) {
 
 module.exports.run = function(options) {
   app.set('debug', options.debug);
-  
+
   mongodb.MongoClient.connect('mongodb://localhost:27017/autolib', function(err, db) {
     if (err) {
       console.error('Failed to connect database.', err);
