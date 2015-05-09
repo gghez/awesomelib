@@ -12,7 +12,11 @@ var getopt = require('node-getopt').create([
   ['', 'bills', 'Display bills.'],
   ['', 'bill=ARG', 'Download bill.'],
   ['', 'near=ARG', 'Stations near specified address.'],
-  ['', 'reserve=ARG', 'Reserve a car at specified station.'],
+  ['', 'has-car', 'Filter only stations with available car.'],
+  ['', 'reserve', 'Reserve a car at specified station.'],
+  ['', 'cancel', 'Cancel a reservation.'],
+  ['', 'reservation=ARG', 'Specify a reservation id.'],
+  ['', 'station=ARG', 'Specify a station id.'],
   ['', 'start=ARG', 'Filter with start date (US format: mm/dd/yyyy).'],
   ['', 'end=ARG', 'Filter with end date (US format: mm/dd/yyyy).'],
   ['', 'mail=ARG', 'Mail a preconfigured status.'],
@@ -112,12 +116,23 @@ if (opt.options.service) {
       opt.options.debug && console.log('SWITCH near.');
 
       session.near(opt.options.near).then(function(stations) {
+        if (opt.options['has-car']) {
+          stations = stations.filter(function(s) {
+            return s.available > 0;
+          });
+        }
         console.log(stations);
       });
-    } else if (opt.options.reserve) {
+    } else if (opt.options.reserve && opt.options.station) {
       opt.options.debug && console.log('SWITCH reserve.');
 
-      session.reserve(opt.options.reserve).then(function(status) {
+      session.reserve(opt.options.station).then(function(status) {
+        console.log(status);
+      });
+    } else if (opt.options.cancel && opt.options.reservation) {
+      opt.options.debug && console.log('SWITCH cancel.');
+
+      session.cancel(opt.options.reservation).then(function(status) {
         console.log(status);
       });
     } else {

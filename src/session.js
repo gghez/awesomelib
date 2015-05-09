@@ -84,4 +84,13 @@ Session.prototype.reserve = function(stationId) {
     .catch(this.errorHandler.bind(this));
 };
 
+Session.prototype.cancel = function(reservationId) {
+  return car.cancel({
+      reservationId: reservationId,
+      cookies: this.cookies,
+      debug: this.debug
+    })
+    .catch(this.errorHandler.bind(this));
+};
+
 module.exports = Session;

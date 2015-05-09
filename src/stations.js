@@ -28,7 +28,7 @@ module.exports.near = function(options) {
 
     utils.respBody(res).then(function(body) {
       var stations = body.toString();
-      defer.resolve(stations);
+      defer.resolve(JSON.parse(stations));
     }).catch(function(err) {
       options.debug && console.error('Body Parsing failed.');
       defer.reject(err);
