@@ -22,6 +22,8 @@ Available routes:
 - `/rest/auth` Authenticate on Autolib authentication platform.
 - `/rest/status` Get current authenticated status.
 - `/rest/usage` Get current rental usage.
+- `/rest/rentals` Get current month rentals.
+- `/rest/stations` Get stations near a specified address.
 
 Web application available at: `http://localhost:3788/`
 
@@ -31,7 +33,7 @@ Web application available at: `http://localhost:3788/`
 autolib -u loginemail@domain.ext -p yourpass --rentals
 ```
 
-Output (fake):
+Output (or error):
 
 ```
 [ { start: '08/04/2015 17:10',
@@ -57,7 +59,7 @@ Output (fake):
 autolib -u <username> -p <pass> --info
 ```
 
-Output:
+Output (or error):
 
 ```
 { lastname: 'Doe',
@@ -80,7 +82,7 @@ Output:
 autolib -u <username> -p <pass> --bills
 ```
 
-Output:
+Output (or error):
 
 ```
 [ { number: '1239823',
@@ -100,6 +102,55 @@ Output:
     status: 'Paid',
     amount: 26.41 } ]
 ```
+
+### Display stations near address
+
+```
+autolib -u <uname> -p <upass> --near "34 rue du bac, paris"
+```
+
+Output (or error):
+
+```
+[ { available: 0,
+    kind: 'STATION',
+    name: 'Paris/Jacques Callot/5',
+    rental_status: 'broken',
+    address: '5 rue Jacques Callot, 75006 Paris',
+    lat: 48.8552045,
+    lng: 2.3371078,
+    hrid: 'paris-jacquescallot-5' },
+  { available: 2,
+    kind: 'STATION',
+    name: 'Paris/Saint-Germain/188',
+    rental_status: 'operational',
+    address: '188 boulevard Saint-Germain, 75007 Paris',
+    lat: 48.85461,
+    lng: 2.329982,
+    hrid: 'paris-saintgermain-188' }, ...]
+
+```
+
+### Reserve a car at station id
+
+```
+autolib -u <uname> -p <upass> --reserve --station "paris-saintgermain-188"
+```
+
+Output (or error):
+
+```
+{ subscriptionId: 234988, reservationId: 123987477 }
+```
+
+### Cancel a car reservation
+
+```
+autolib -u <uname> -p <upass> --cancel --reservation 123987477
+```
+
+No output or error.
+
 
 ### Help
 
