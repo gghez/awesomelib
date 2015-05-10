@@ -21,6 +21,11 @@ angular.module('awesomelib').config(['$routeProvider', function($routeProvider) 
     controller: 'rentalsController'
   });
 
+  $routeProvider.when('/pending', {
+    templateUrl: 'app/components/pending/pending.html',
+    controller: 'pendingController'
+  });
+
   $routeProvider.otherwise({
     redirectTo: '/'
   });

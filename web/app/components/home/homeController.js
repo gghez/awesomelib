@@ -1,6 +1,6 @@
 angular.module('awesomelib').controller('homeController', [
-  '$scope', 'usage', '$window', '$location', 'car',
-  function($scope, usage, $window, $location, car) {
+  '$scope', 'usage', '$window', '$location',
+  function($scope, usage, $window, $location) {
 
     $scope.Math = $window.Math;
 
@@ -11,12 +11,5 @@ angular.module('awesomelib').controller('homeController', [
       $location.path('/login');
     });
 
-    car.pending().then(function(reservations) {
-      $scope.reservations = reservations;
-    });
-
-    $scope.cancel = function() {
-      $window.alert('Not implemented yet.');
-    };
   }
 ]);

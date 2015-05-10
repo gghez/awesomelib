@@ -3,7 +3,7 @@ module.exports = function(grunt) {
 
   grunt.initConfig({
     less: {
-      app: {
+      web: {
         files: {
           'web/assets/css/styles.css': 'web/app/main.less'
         }
@@ -11,9 +11,17 @@ module.exports = function(grunt) {
     },
 
     watch: {
-      app: {
+      web: {
         files: 'web/app/**/*',
-        tasks: ['less:app', 'concat:app']
+        tasks: ['less:web', 'concat:web']
+      },
+      back: {
+        files: ['back/**/*.{js,html}'],
+        tasks: ['express:local'],
+        options: {
+          atBegin: true,
+          spawn: false
+        }
       }
     },
 
@@ -28,13 +36,28 @@ module.exports = function(grunt) {
     },
 
     concat: {
-      app: {
+      web: {
         src: ['web/app/module.js', 'web/app/**/*.js'],
         dest: 'web/assets/js/app.js'
       }
+    },
+
+    concurrent: {
+      options: {
+        logConcurrentOutput: true
+      },
+      dev: ['watch:back', 'watch:web']
+    },
+
+    compile: {
+      dev: ['less:web', 'concat:web']
     }
   });
 
-  grunt.registerTask('compile', ['less:app', 'concat:app']);
-  grunt.registerTask('run', ['compile', 'express:local', 'watch:app']);
+  grunt.registerMultiTask('compile', function() {
+    grunt.task.run(this.data);
+  });
+
+  grunt.registerTask('run', ['compile:dev', 'concurrent:dev']);
+
 };
