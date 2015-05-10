@@ -1,0 +1,30 @@
+<form>
+  <div class="form-group">
+    <input type="text" class="form-control" ng-model="searchText" placeholder="Station name or address" />
+  </div>
+</form>
+
+<div class="al-station-list" ng-if="searchText && searchText.length > 2">
+  <div ng-repeat="station in stations | filter:searchText" class="al-station panel panel-default">
+    <div class="panel-body">
+
+      <a ng-href="#/station/{{station.station_id}}" class="al-station-name">{{station.name}}</a>
+
+      <div class="al-station-actions">
+        <button class="btn btn-primary btn-xs al-station-action" title="Click to reserve" ng-click="reserve('car', station.name)">Cars
+          <span class="badge">{{station.cars}}</span>
+        </button>
+        <button class="btn btn-primary btn-xs al-station-action" title="Click to reserve" ng-click="reserve('park', station.name)">Parks
+          <span class="badge">{{station.parks}}</span>
+        </button>
+      </div>
+
+      <span class="al-station-distance">
+      <span class="glyphicon glyphicon-map-marker"></span>
+      {{ Math.round(0.01 * station.distance) / 10 }} km
+      </span>
+
+      <span class="al-station-address">{{station.address}}</span>
+    </div>
+  </div>
+</div>

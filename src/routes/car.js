@@ -2,8 +2,9 @@ var router = require('express').Router();
 var Q = require('q');
 var car = require('../car');
 
-router.get('/reserve/:stationId', function(req, res, next) {
+router.get('/reserve/:type/:stationId', function(req, res, next) {
   car.reserve({
+    type: req.params.type,
     stationId: req.params.stationId,
     cookies: req.user.cookies,
     debug: req.app.get('debug')
@@ -13,8 +14,9 @@ router.get('/reserve/:stationId', function(req, res, next) {
 
 });
 
-router.get('/cancel/:reservation', function(req, res, next) {
+router.get('/cancel/:type/:reservation', function(req, res, next) {
   car.cancel({
+    type: req.params.type,
     reservationId: req.params.reservation,
     cookies: req.user.cookies,
     debug: req.app.get('debug')

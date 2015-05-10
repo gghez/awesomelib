@@ -1,9 +1,37 @@
-<div ng-repeat="res in reservations" class="alert al-pending" ng-class="{
-  'alert-danger': res.status.toLowerCase() != 'pending',
-  'alert-success': res.status.toLowerCase() == 'pending'
+<div ng-init="types=['car', 'park']">
+
+  <div ng-repeat="type in types">
+    <a ng-attr-id="pending-{{type}}"></a>
+    <h2>{{type | capitalize }}
+      <span class="badge">{{ reservations | filter:{type:type} | length }}</span>
+    </h2>
+
+    <div ng-repeat="res in reservations | filter:{type:type}" class="alert al-pending clearfix" ng-class="{
+  'alert-danger': res.status == 'canceled',
+  'alert-success': res.status == 'taken',
+  'alert-warning': res.status == 'pending'
 }">
-  <span class="al-pending-status">{{ res.status }}</span>
-  <!--<button class="btn btn-danger btn-xs al-pending-action" ng-show="res.status.toLowerCase() == 'pending'" ng-click="cancel()">Cancel</button>-->
-  <span class="al-pending-date">{{ res.date + ' ' + res.time.from + ' -> ' + res.time.to }}</span>
-  <span class="al-pending-station">{{ res.station }}</span>
+      <span class="al-pending-status">{{ res.status }}</span>
+
+      <span class="al-pending-date">{{ res.date + ' ' + res.time.from + ' to ' + res.time.to }}</span>
+      <span ng-show="res.status == 'pending'" class="al-countdown label label-warning" title="Remaining time">
+        <span class="glyphicon glyphicon-time"></span> {{ res.countDown }}
+      </span>
+
+      <a ng-href="#/station/{{ res.station.station_id }}" class="al-pending-station">{{ res.station.name }}</a>
+
+      <button class="btn btn-danger btn-xs al-pending-action" ng-show="res.status == 'pending'" ng-click="cancel(type, res.reservationId)">
+        <span class="glyphicon glyphicon-thumbs-down"></span>
+        Cancel
+      </button>
+
+      <button class="btn btn-primary btn-xs al-pending-action" ng-show="res.status == 'canceled'" ng-click="reserve(type, res.station.name)">
+        <span class="glyphicon glyphicon-thumbs-up"></span>
+        Reserve
+      </button>
+
+    </div>
+
+  </div>
+
 </div>

@@ -10,7 +10,7 @@ function Session(debug) {
   this.cookies = null;
   this.debug = debug;
   this.errorHandler = function(err) {
-    console.error(err);
+    console.error(err instanceof Error ? err.stack : err);
     process.kill(process.pid);
   }
 }
@@ -68,6 +68,7 @@ Session.prototype.bill = function(number) {
 
 Session.prototype.near = function(address) {
   return stations.near({
+      type: 'car',
       address: address,
       cookies: this.cookies,
       debug: this.debug
@@ -75,8 +76,17 @@ Session.prototype.near = function(address) {
     .catch(this.errorHandler.bind(this));
 };
 
-Session.prototype.reserve = function(stationId) {
+Session.prototype.stations = function() {
+  return stations.all({
+      cookies: this.cookies,
+      debug: this.debug
+    })
+    .catch(this.errorHandler.bind(this));
+};
+
+Session.prototype.reserve = function(type, stationId) {
   return car.reserve({
+      type: type,
       stationId: stationId,
       cookies: this.cookies,
       debug: this.debug
@@ -84,8 +94,9 @@ Session.prototype.reserve = function(stationId) {
     .catch(this.errorHandler.bind(this));
 };
 
-Session.prototype.cancel = function(reservationId) {
+Session.prototype.cancel = function(type, reservationId) {
   return car.cancel({
+      type: type,
       reservationId: reservationId,
       cookies: this.cookies,
       debug: this.debug

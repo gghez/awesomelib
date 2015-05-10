@@ -26,6 +26,21 @@ angular.module('awesomelib').config(['$routeProvider', function($routeProvider) 
     controller: 'pendingController'
   });
 
+  $routeProvider.when('/pending/:type', {
+    templateUrl: 'app/components/pending/pending.html',
+    controller: 'pendingController'
+  });
+
+  $routeProvider.when('/stations', {
+    templateUrl: 'app/components/stations/stations.html',
+    controller: 'stationsController'
+  });
+
+  $routeProvider.when('/station/:stationId', {
+    templateUrl: 'app/components/stations/station.html',
+    controller: 'stationController'
+  });
+
   $routeProvider.otherwise({
     redirectTo: '/'
   });

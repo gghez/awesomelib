@@ -16,7 +16,7 @@ module.exports = function(grunt) {
         tasks: ['less:web', 'concat:web']
       },
       back: {
-        files: ['back/**/*.{js,html}'],
+        files: ['src/**/*.{js,html}'],
         tasks: ['express:local'],
         options: {
           atBegin: true,
@@ -29,7 +29,7 @@ module.exports = function(grunt) {
       local: {
         options: {
           script: 'bin/index.js',
-          args: ['--service'],
+          args: ['--service', '--debug'],
           port: 3788
         }
       }

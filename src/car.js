@@ -29,7 +29,9 @@ function subscription(options) {
     } else {
       var redirectLocation = res.headers['location'];
       var matches = /\/(\d+)\//.exec(redirectLocation);
-      defer.resolve(matches && matches[1]);
+      var subscriptionId = matches && matches[1];
+      options.debug && console.log('SubscriptionID', subscriptionId);
+      defer.resolve(subscriptionId);
     }
   });
 
@@ -50,7 +52,7 @@ module.exports.reserve = function(options) {
   return subscription(options).then(function(subscriptionId) {
     var defer = Q.defer();
 
-    var referer = 'https://www.autolib.eu/account/reservations/' + subscriptionId + '/carreservation/';
+    var referer = 'https://www.autolib.eu/account/reservations/' + subscriptionId + '/' + options.type + 'reservation/';
 
     var postData = querystring.stringify({
       csrfmiddlewaretoken: options.cookies['csrftoken'],
@@ -78,18 +80,18 @@ module.exports.reserve = function(options) {
       options.debug && console.log('HTTP status', res.statusCode);
 
       if (res.statusCode == 302) { // Good, reservation done.
-        // location: https://www.autolib.eu/account/reservations/178766/carreservation/13667287/confirm/
+        // location: https://www.autolib.eu/account/reservations/178766/(car|park)reservation/13667287/confirm/
         var confirmUrl = res.headers['location'];
 
         options.debug && console.log('Confirmation URL', confirmUrl);
 
-        var matches = /\/account\/reservations\/(\d+)\/carreservation\/(\d+)\/confirm/.exec(confirmUrl);
+        var matches = /\/account\/reservations\/(\d+)\/\w+reservation\/(\d+)\/confirm/.exec(confirmUrl);
         defer.resolve({
           subscriptionId: matches[1],
           reservationId: matches[2]
         });
       } else {
-        defer.reject('Car reservation failed (HTTP:' + res.statusCode + ')');
+        defer.reject('Reservation of ' + options.type + ' failed (HTTP:' + res.statusCode + ')');
       }
     });
 
@@ -107,11 +109,12 @@ module.exports.reserve = function(options) {
   });
 };
 
+
 module.exports.cancel = function(options) {
   return subscription(options).then(function(subscriptionId) {
     var defer = Q.defer();
 
-    var path = '/account/reservations/' + subscriptionId + '/carreservation/' + options.reservationId + '/cancel/';
+    var path = '/account/reservations/' + subscriptionId + '/' + options.type + 'reservation/' + options.reservationId + '/cancel/';
 
     var postData = querystring.stringify({
       csrfmiddlewaretoken: options.cookies['csrftoken']
@@ -182,21 +185,44 @@ module.exports.pending = function(options) {
         var html = body.toString();
         var $ = cheerio.load(html);
 
-        var reservations = $('article > table > tbody > tr').map(function(i, tr) {
+        function extractData(type, i, tr) {
           var timeString = $(tr).find('td').eq(1).text();
           var timeMatches = /from\s+(\d{2}:\d{2})\s*to\s+(\d{2}:\d{2})/i.exec(timeString);
           var time = {
             from: timeMatches[1],
             to: timeMatches[2]
           };
-          return {
-            date: $(tr).find('td').eq(0).text().trim(),
+
+          var colls = $(tr).find('td');
+          var statusCol = colls.eq(4);
+
+          var res = {
+            date: colls.eq(0).text().trim(),
             time: time,
-            station: $(tr).find('td').eq(2).text().trim(),
-            subscription: $(tr).find('td').eq(3).text().trim().replace(/\s+/g, ' '),
-            status: $(tr).find('td').eq(4).text().trim()
+            station: {
+              name: colls.eq(2).text().trim()
+            },
+            subscription: colls.eq(3).text().trim().replace(/\s+/g, ' '),
+            status: statusCol.find('span').text().trim().toLowerCase(),
+            type: type
           };
-        }).get();
+
+          var statusCancelForm = statusCol.find('form');
+          if (statusCancelForm.length) {
+            var resMatches = /\/account\/reservations\/\d+\/\w+reservation\/(\d+)\/cancel/.exec(statusCancelForm.attr('action'));
+            res.reservationId = resMatches[1];
+          }
+
+          return res;
+        }
+
+        var extractCarData = extractData.bind(undefined, 'car');
+        var extractParkData = extractData.bind(undefined, 'park');
+
+        var carReservations = $('table.account-table').eq(0).find('tbody > tr').map(extractCarData).get();
+        var parkReservations = $('table.account-table').eq(1).find('tbody > tr').map(extractParkData).get();
+
+        var reservations = carReservations.concat(parkReservations);
 
         defer.resolve(reservations);
       }).catch(function(err) {

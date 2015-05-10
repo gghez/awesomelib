@@ -12,10 +12,12 @@ var getopt = require('node-getopt').create([
   ['', 'bills', 'Display bills.'],
   ['', 'bill=ARG', 'Download bill.'],
   ['', 'near=ARG', 'Stations near specified address.'],
+  ['', 'stations', 'List of all stations.'],
   ['', 'has-car', 'Filter only stations with available car.'],
   ['', 'reserve=ARG', 'Reserve a car at specified station.'],
   ['', 'cancel=ARG', 'Cancel a reservation.'],
-  ['', 'reservations', 'List pending reservations.'],
+  ['', 'res-type=ARG', 'Reservation type ("car" or "park").'],
+  ['', 'pending', 'List pending reservations.'],
   ['', 'start=ARG', 'Filter with start date (US format: mm/dd/yyyy).'],
   ['', 'end=ARG', 'Filter with end date (US format: mm/dd/yyyy).'],
   ['', 'mail=ARG', 'Mail a preconfigured status.'],
@@ -125,20 +127,26 @@ if (opt.options.service) {
     } else if (opt.options.reserve) {
       opt.options.debug && console.log('SWITCH reserve.');
 
-      session.reserve(opt.options.reserve).then(function(status) {
+      session.reserve(opt.options['res-type'] || 'car', opt.options.reserve).then(function(status) {
         console.log(status);
       });
     } else if (opt.options.cancel) {
       opt.options.debug && console.log('SWITCH cancel.');
 
-      session.cancel(opt.options.cancel).then(function(status) {
-        console.log(status);
+      session.cancel(opt.options['res-type'] || 'car', opt.options.cancel).then(function() {
+        console.log('Canceled.');
       });
-    } else if (opt.options.reservations) {
-      opt.options.debug && console.log('SWITCH reservations.');
+    } else if (opt.options.pending) {
+      opt.options.debug && console.log('SWITCH pending.');
 
       session.pending().then(function(reservations) {
         console.log(reservations);
+      });
+    } else if (opt.options.stations) {
+      opt.options.debug && console.log('SWITCH stations.');
+
+      session.stations().then(function(stations) {
+        console.log(stations);
       });
     } else {
       getopt.showHelp();

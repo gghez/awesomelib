@@ -1,16 +1,20 @@
-<table class="table table-hover table-bordered">
-  <thead>
-    <tr>
-      <th>Run</th>
-      <th>Duration</th>
-      <th>Amount</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr ng-repeat="rental in rentals">
-      <td>{{ rental.start }}<br/>from {{ rental.from }} to {{ rental.to }}</td>
-      <td>{{ rental.duration }}</td>
-      <td>{{ rental.amount }}</td>
-    </tr>
-  </tbody>
-</table>
+<div ng-repeat="rental in rentals" class="panel panel-default al-rental clearfix">
+  <div class="panel-body">
+    <span class="al-rental-date">{{ rental.start }}</span>
+    <span class="al-rental-run">
+      <span class="glyphicon glyphicon-log-out"></span>
+      <a ng-href="#/station/{{rental.from.station_id}}">{{ rental.from.name || rental.from.address }}</a><br/>
+      <a ng-href="#/station/{{rental.to.station_id}}">{{ rental.to.name || rental.to.address }}</a>
+      <span class="glyphicon glyphicon-log-in"></span>
+    </span>
+    <span class="al-rental-duration" ng-class="{
+      'text-danger':rental.amount == 3.66 || rental.amount > 5,
+      'text-success':rental.amount > 3.66 && rental.amount <= 5
+    }">{{ rental.duration }}</span>
+    <span class="al-rental-amount" ng-class="{
+      'text-danger':rental.amount == 3.66 || rental.amount > 5,
+      'text-success':rental.amount > 3.66 && rental.amount <= 5
+    }">{{ rental.amount }} €</span>
+
+  </div>
+</div>
