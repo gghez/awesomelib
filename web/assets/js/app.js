@@ -26,13 +26,28 @@ angular.module('awesomelib').config(['$routeProvider', function($routeProvider) 
   });
 }]);
 
-angular.module('awesomelib').controller('homeController', ['$scope', 'usage', function($scope, usage) {
+angular.module('awesomelib').controller('homeController', [
+  '$scope', 'usage', '$window', '$location', 'car',
+  function($scope, usage, $window, $location, car) {
 
-  usage.get().then(function(u) {
-    $scope.usage = u;
-  });
+    $scope.Math = $window.Math;
 
-}]);
+    usage.get().then(function(u) {
+      $scope.usage = u;
+      $scope.usage.diff = u.cur - u.prev;
+    }).catch(function() {
+      $location.path('/login');
+    });
+
+    car.pending().then(function(reservations) {
+      $scope.reservations = reservations;
+    });
+
+    $scope.cancel = function() {
+      $window.alert('Not implemented yet.');
+    };
+  }
+]);
 
 angular.module('awesomelib').controller('loginController', ['$scope', 'login', '$location', function($scope, login, $location){
 
@@ -66,6 +81,16 @@ angular.module('awesomelib').service('status', ['$http', function($http) {
   return {
     get: function() {
       return $http.get('/rest/status').then(function(resp) {
+        return resp.data;
+      });
+    }
+  };
+}]);
+
+angular.module('awesomelib').service('car', ['$http', function($http) {
+  return {
+    pending: function() {
+      return $http.get('/rest/car/pending').then(function(resp) {
         return resp.data;
       });
     }

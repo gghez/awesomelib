@@ -1,13 +1,38 @@
-<div class="al-usage-block">
-  <span class="al-usage-label">Prev month</span>
-  <span class="al-usage-amount">{{usage.prev}} €</span>
-</div>
+<div class="row">
+  <div class="col-sm-6">
 
-<div class="al-usage-block">
-  <span class="al-usage-label">Current month</span>
-  <span class="al-usage-amount">{{usage.cur}} €</span>
-  <span class="al-usage-diff" ng-class="{
-    'text-success':usage.cur - usage.prev < 0,
-    'text-danger':usage.cur - usage.prev > 0
-  }">{{ usage.cur - usage.prev }} €</span>
+    <h2>Usage</h2>
+
+    <div class="al-usage-block">
+      <span class="al-usage-label">Prev month</span>
+      <span class="al-usage-amount">{{usage.prev}} €</span>
+    </div>
+
+    <div class="al-usage-block">
+      <span class="al-usage-label">Current month</span>
+      <span class="al-usage-amount">{{usage.cur}} €</span>
+      <span class="al-usage-diff" ng-class="{
+        'text-success':usage.cur - usage.prev < 0,
+        'text-danger':usage.cur - usage.prev > 0
+      }">{{ Math.round(100 * (usage.cur - usage.prev)) / 100 }} €</span>
+    </div>
+
+
+  </div>
+
+  <div class="col-sm-6">
+
+    <h2>Pending</h2>
+
+    <div ng-repeat="res in reservations" class="alert al-pending" ng-class="{
+      'alert-danger': res.status.toLowerCase() != 'pending',
+      'alert-success': res.status.toLowerCase() == 'pending'
+    }">
+      <span class="al-pending-status">{{ res.status }}</span>
+      <!--<button class="btn btn-danger btn-xs al-pending-action" ng-show="res.status.toLowerCase() == 'pending'" ng-click="cancel()">Cancel</button>-->
+      <span class="al-pending-date">{{ res.date + ' ' + res.time.from + ' -> ' + res.time.to }}</span>
+      <span class="al-pending-station">{{ res.station }}</span>
+    </div>
+
+  </div>
 </div>

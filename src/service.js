@@ -3,7 +3,7 @@ var mongodb = require('mongodb');
 var morgan = require('morgan');
 
 var app = express();
-
+app.disable('etag');
 app.use(morgan('common'));
 
 app.use('/assets/libs/', express.static(__dirname + '/../node_modules/'));
@@ -13,6 +13,7 @@ app.use('/rest/', require('./routes/auth'));
 app.use('/rest/rentals', require('./routes/rentals'));
 app.use('/rest/usage', require('./routes/usage'));
 app.use('/rest/stations', require('./routes/stations'));
+app.use('/rest/car', require('./routes/car'));
 
 app.get('/rest/status', function(req, res, next) {
   res.send({

@@ -156,3 +156,66 @@ module.exports.cancel = function(options) {
   });
 
 };
+
+module.exports.pending = function(options) {
+  var defer = Q.defer();
+
+  var path = '/account/reservations/';
+
+  options.debug && console.log('[GET]', path);
+
+  var req = https.request({
+    method: 'GET',
+    host: 'www.autolib.eu',
+    path: path,
+    headers: {
+      'Cookie': utils.stringifyCookies(options.cookies),
+      'Accept-Language': 'en-US,en'
+    }
+  });
+
+  req.on('response', function(res) {
+    options.debug && console.log('HTTP status', res.statusCode);
+
+    if (res.statusCode == 200) {
+      utils.respBody(res).then(function(body) {
+        var html = body.toString();
+        var $ = cheerio.load(html);
+
+        var reservations = $('article > table > tbody > tr').map(function(i, tr) {
+          var timeString = $(tr).find('td').eq(1).text();
+          var timeMatches = /from\s+(\d{2}:\d{2})\s*to\s+(\d{2}:\d{2})/i.exec(timeString);
+          var time = {
+            from: timeMatches[1],
+            to: timeMatches[2]
+          };
+          return {
+            date: $(tr).find('td').eq(0).text().trim(),
+            time: time,
+            station: $(tr).find('td').eq(2).text().trim(),
+            subscription: $(tr).find('td').eq(3).text().trim().replace(/\s+/g, ' '),
+            status: $(tr).find('td').eq(4).text().trim()
+          };
+        }).get();
+
+        defer.resolve(reservations);
+      }).catch(function(err) {
+        options.debug && console.error('Body Parsing failed.');
+        defer.reject(err);
+      });
+    } else {
+      defer.reject('Pending reservations request failed (HTTP:' + res.statusCode + ')');
+    }
+  });
+
+  utils.setTimeout(req, options.timeout || 5000);
+
+  req.on('error', function(err) {
+    options.debug && console.error('Pending reservations request Error');
+    defer.reject(err);
+  });
+
+  req.end();
+
+  return defer.promise;
+};

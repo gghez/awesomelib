@@ -93,4 +93,12 @@ Session.prototype.cancel = function(reservationId) {
     .catch(this.errorHandler.bind(this));
 };
 
+Session.prototype.pending = function() {
+  return car.pending({
+      cookies: this.cookies,
+      debug: this.debug
+    })
+    .catch(this.errorHandler.bind(this));
+};
+
 module.exports = Session;

@@ -71,7 +71,7 @@ module.exports = function(options) {
       }).catch(function(err) {
         options.debug && console.error('Body Parsing failed.');
         defer.reject(err);
-      })
+      });
     });
 
     utils.setTimeout(req, options.timeout || 5000);

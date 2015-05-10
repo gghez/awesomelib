@@ -63,6 +63,7 @@ router.post('/auth', bodyParser.json(), function(req, res, next) {
           if (err) {
             next(err);
           } else if (result.result.n) {
+            res.header('Set-Cookie', 'AL-TOKEN=' + token);
             res.send({
               token: token
             });

@@ -134,7 +134,7 @@ Output (or error):
 ### Reserve a car at station id
 
 ```
-autolib -u <uname> -p <upass> --reserve --station "paris-saintgermain-188"
+autolib -u <uname> -p <upass> --reserve "paris-saintgermain-188"
 ```
 
 Output (or error):
@@ -146,7 +146,7 @@ Output (or error):
 ### Cancel a car reservation
 
 ```
-autolib -u <uname> -p <upass> --cancel --reservation 123987477
+autolib -u <uname> -p <upass> --cancel 123987477
 ```
 
 No output or error.
