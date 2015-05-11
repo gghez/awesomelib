@@ -1,7 +1,5 @@
 node_modules
 *.log
-bower_components
-.data
 web/assets/**/*
 *~
 src/api/oauth2.js
