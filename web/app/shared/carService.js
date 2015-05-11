@@ -9,6 +9,7 @@ angular.module('awesomelib').service('car', [
       },
       reserveByName: function(type, stationName) {
         var _this = this;
+        console.info && console.info('Reserve', type, stationName);
 
         return stations.all().then(function(allStations) {
 
@@ -44,14 +45,14 @@ angular.module('awesomelib').service('car', [
 
       },
       reserve: function(type, hrid) {
-        return $http.get('/rest/car/reserve/' + type + '/' + hrid).then(function(resp) {
-          console.info && console.info('Reservation done', resp.data);
+        return $http.get('/rest/car/reserve/' + encodeURIComponent(type) + '/' + encodeURIComponent(hrid)).then(function(resp) {
+          console.info && console.info('Reserved', resp.data);
           return resp.data;
         });
       },
       cancel: function(type, reservationId) {
-        return $http.get('/rest/car/cancel/' + type + '/' + reservationId).then(function() {
-          console.info && console.info('Cancellation done', reservationId);
+        return $http.get('/rest/car/cancel/' + encodeURIComponent(type) + '/' + encodeURIComponent(reservationId)).then(function() {
+          console.info && console.info('Canceled', reservationId);
         });
       }
     };

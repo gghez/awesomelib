@@ -233,6 +233,7 @@ angular.module('awesomelib').controller('stationController', [
         _carNear.some(function(s) {
           if (s.address == $scope.station.address) {
             $scope.station.cars = s.available;
+            console.debug && console.debug(s.available, 'cars at station');
             return true;
           }
         });
@@ -242,6 +243,7 @@ angular.module('awesomelib').controller('stationController', [
         _carNear.some(function(s) {
           if (s.address == $scope.station.address) {
             $scope.station.parks = s.available;
+            console.debug && console.debug(s.available, 'parks at station');
             return true;
           }
         });
@@ -290,13 +292,19 @@ angular.module('awesomelib').controller('stationsController', [
     function load() {
       stations.all().then(function(stations) {
         $scope.stations = stations;
+        console.debug && console.debug(stations.length, 'stations retrieved.');
 
         navigator.geolocation && navigator.geolocation.getCurrentPosition(function(me) {
-          me.lat = me.coords.latitude;
-          me.lng = me.coords.longitude;
-          $scope.stations.forEach(function(s) {
-            s.distance = distance(s, me);
+          console.debug && console.debug('Me', me);
+
+          $scope.$apply(function(){
+            me.lat = me.coords.latitude;
+            me.lng = me.coords.longitude;
+            $scope.stations.forEach(function(s) {
+              s.distance = Math.round(0.01 * distance(s, me)) / 10;
+            });
           });
+          
         });
 
       });
@@ -350,12 +358,6 @@ angular.module('awesomelib').service('status', ['$http', function($http) {
   };
 }]);
 
-angular.module('awesomelib').filter('capitalize', [function() {
-  return function(string) {
-    return string && typeof string == 'string' && string[0].toUpperCase() + string.substr(1);
-  }
-}]);
-
 angular.module('awesomelib').service('car', [
   '$http', 'stations',
   function($http, stations) {
@@ -367,6 +369,7 @@ angular.module('awesomelib').service('car', [
       },
       reserveByName: function(type, stationName) {
         var _this = this;
+        console.info && console.info('Reserve', type, stationName);
 
         return stations.all().then(function(allStations) {
 
@@ -402,19 +405,25 @@ angular.module('awesomelib').service('car', [
 
       },
       reserve: function(type, hrid) {
-        return $http.get('/rest/car/reserve/' + type + '/' + hrid).then(function(resp) {
-          console.info && console.info('Reservation done', resp.data);
+        return $http.get('/rest/car/reserve/' + encodeURIComponent(type) + '/' + encodeURIComponent(hrid)).then(function(resp) {
+          console.info && console.info('Reserved', resp.data);
           return resp.data;
         });
       },
       cancel: function(type, reservationId) {
-        return $http.get('/rest/car/cancel/' + type + '/' + reservationId).then(function() {
-          console.info && console.info('Cancellation done', reservationId);
+        return $http.get('/rest/car/cancel/' + encodeURIComponent(type) + '/' + encodeURIComponent(reservationId)).then(function() {
+          console.info && console.info('Canceled', reservationId);
         });
       }
     };
   }
 ]);
+
+angular.module('awesomelib').filter('capitalize', [function() {
+  return function(string) {
+    return string && typeof string == 'string' && string[0].toUpperCase() + string.substr(1);
+  }
+}]);
 
 angular.module('awesomelib').filter('length', [function() {
   return function(arr) {
@@ -443,13 +452,13 @@ angular.module('awesomelib').service('geocoder', ['$q', function($q) {
     addressOf: function(latlng) {
       var defer = $q.defer();
 
-      console.log('Geocoder.addressOf', latlng);
+      console.debug && console.debug('Geocoder.addressOf', latlng);
       geocoder.geocode({
         'latLng': latlng
       }, function(results, status) {
         if (status == google.maps.GeocoderStatus.OK) {
           if (results[1]) {
-            console.log('=>', results[1].formatted_address);
+            console.debug && console.debug('=>', results[1].formatted_address);
             defer.resolve(results[1].formatted_address);
           } else {
             defer.reject('No address found.');
@@ -465,13 +474,13 @@ angular.module('awesomelib').service('geocoder', ['$q', function($q) {
     coordOf: function(address) {
       var defer = $q.defer();
 
-      console.log('Geocoder.coordOf', address);
+      console.debug && console.debug('Geocoder.coordOf', address);
 
       geocoder.geocode({
         'address': address
       }, function(results, status) {
         if (status == google.maps.GeocoderStatus.OK) {
-          console.log('=>', results[0].geometry.location);
+          console.debug && console.debug('=>', results[0].geometry.location);
           defer.resolve(results[0].geometry.location);
         } else {
           defer.reject('Geocode was not successful for the following reason: ' + status);
@@ -562,10 +571,10 @@ angular.module('awesomelib').directive('alMap', [
             map && map.panTo(me);
 
             geocoder.addressOf(me).then(function(address) {
-              console.log('Me detected at', address);
-              return stations.near(address);
+              console.debug && console.debug('Me detected at', address);
+              return stations.near('car', address);
             }).then(function(stations) {
-              console.log('stations', stations);
+              console.debug && console.debug(stations.length, 'stations around.');
               sMarks.forEach(function(sMark) {
                 sMark.setMap(null);
               });
@@ -607,22 +616,30 @@ angular.module('awesomelib').service('rentals', ['$http', function($http) {
 angular.module('awesomelib').service('stations', ['$http', function($http) {
   return {
     near: function(type, address) {
-      return $http.get('/rest/stations/near/' + type + '/' + address).then(function(resp) {
+      console.debug && console.debug('[HTTP] Near', type, address);
+      return $http.get('/rest/stations/near/' + encodeURIComponent(type) + '/' + encodeURIComponent(address)).then(function(resp) {
+        console.debug && console.debug('[HTTP] Near ->', resp.data.length);
         return resp.data;
       });
     },
     all: function() {
+      console.debug && console.debug('[HTTP] All stations');
       return $http.get('/rest/stations/').then(function(resp) {
+        console.debug && console.debug('[HTTP] All stations ->', resp.data.length);
         return resp.data;
       });
     },
     get: function(stationId) {
-      return $http.get('/rest/stations/' + stationId).then(function(resp) {
+      console.debug && console.debug('[HTTP] Station', stationId);
+      return $http.get('/rest/stations/' + encodeURIComponent(stationId)).then(function(resp) {
+        console.debug && console.debug('[HTTP] Station ->', resp.data);
         return resp.data;
       });
     },
     address: function(address) {
-      return $http.get('/rest/stations/address/' + address).then(function(resp) {
+      console.debug && console.debug('[HTTP] Address', address);
+      return $http.get('/rest/stations/address/' + encodeURIComponent(address)).then(function(resp) {
+        console.debug && console.debug('[HTTP] Address ->', resp.data.length);
         return resp.data;
       });
     }

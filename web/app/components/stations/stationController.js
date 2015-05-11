@@ -38,6 +38,7 @@ angular.module('awesomelib').controller('stationController', [
         _carNear.some(function(s) {
           if (s.address == $scope.station.address) {
             $scope.station.cars = s.available;
+            console.debug && console.debug(s.available, 'cars at station');
             return true;
           }
         });
@@ -47,6 +48,7 @@ angular.module('awesomelib').controller('stationController', [
         _carNear.some(function(s) {
           if (s.address == $scope.station.address) {
             $scope.station.parks = s.available;
+            console.debug && console.debug(s.available, 'parks at station');
             return true;
           }
         });

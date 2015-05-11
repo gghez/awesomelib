@@ -19,9 +19,9 @@
         </button>
       </div>
 
-      <span class="al-station-distance">
+      <span class="al-station-distance" ng-show="station.distance">
       <span class="glyphicon glyphicon-map-marker"></span>
-      {{ Math.round(0.01 * station.distance) / 10 }} km
+      {{ station.distance }} km
       </span>
 
       <span class="al-station-address">{{station.address}}</span>

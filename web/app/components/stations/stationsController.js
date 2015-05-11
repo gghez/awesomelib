@@ -7,13 +7,19 @@ angular.module('awesomelib').controller('stationsController', [
     function load() {
       stations.all().then(function(stations) {
         $scope.stations = stations;
+        console.debug && console.debug(stations.length, 'stations retrieved.');
 
         navigator.geolocation && navigator.geolocation.getCurrentPosition(function(me) {
-          me.lat = me.coords.latitude;
-          me.lng = me.coords.longitude;
-          $scope.stations.forEach(function(s) {
-            s.distance = distance(s, me);
+          console.debug && console.debug('Me', me);
+
+          $scope.$apply(function(){
+            me.lat = me.coords.latitude;
+            me.lng = me.coords.longitude;
+            $scope.stations.forEach(function(s) {
+              s.distance = Math.round(0.01 * distance(s, me)) / 10;
+            });
           });
+          
         });
 
       });

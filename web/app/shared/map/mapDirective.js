@@ -77,10 +77,10 @@ angular.module('awesomelib').directive('alMap', [
             map && map.panTo(me);
 
             geocoder.addressOf(me).then(function(address) {
-              console.log('Me detected at', address);
-              return stations.near(address);
+              console.debug && console.debug('Me detected at', address);
+              return stations.near('car', address);
             }).then(function(stations) {
-              console.log('stations', stations);
+              console.debug && console.debug(stations.length, 'stations around.');
               sMarks.forEach(function(sMark) {
                 sMark.setMap(null);
               });

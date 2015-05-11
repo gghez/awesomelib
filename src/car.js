@@ -52,7 +52,8 @@ module.exports.reserve = function(options) {
   return subscription(options).then(function(subscriptionId) {
     var defer = Q.defer();
 
-    var referer = 'https://www.autolib.eu/account/reservations/' + subscriptionId + '/' + options.type + 'reservation/';
+    var referer = 'https://www.autolib.eu/account/reservations/' + subscriptionId +
+      '/' + options.type + 'reservation/?full_address=' + encodeURIComponent(options.stationId);
 
     var postData = querystring.stringify({
       csrfmiddlewaretoken: options.cookies['csrftoken'],
@@ -61,7 +62,7 @@ module.exports.reserve = function(options) {
     });
 
     var path = referer;
-    options.debug && console.log('[POST]', path);
+    options.debug && console.log('[POST]', path, postData);
 
     var req = https.request({
       method: 'POST',
@@ -120,7 +121,7 @@ module.exports.cancel = function(options) {
       csrfmiddlewaretoken: options.cookies['csrftoken']
     });
 
-    options.debug && console.log('[POST]', path);
+    options.debug && console.log('[POST]', path, postData);
 
     var req = https.request({
       method: 'POST',
