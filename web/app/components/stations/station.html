@@ -1,40 +1,40 @@
 <div class="panel panel-default al-station-panel">
-  <div class="panel-heading">
-    <h3>
-      {{station.name}}
-      <small class="pull-right">
-        {{station.short_name}}
-      </small>
-    </h3>
-  </div>
-  <div class="panel-body">
-
-    <div class="alert alert-info clearfix" ng-if="res && res.type">
-      You have a {{ res.type }} reserved here.
-        <span class="label label-info" title="Remaining time">
-          <span class="glyphicon glyphicon-time"></span>
-          {{ res.countDown }}
-        </span>
-
-        <button class="btn btn-danger btn-xs pull-right" ng-click="cancel(res.type, res.reservationId)">
-          <span class="glyphicon glyphicon-thumbs-down"></span>
-          Cancel
-        </button>
+    <div class="panel-heading">
+        <h3>
+            {{station.public_name}}
+            <small class="pull-right">
+                {{station.address}}
+            </small>
+        </h3>
     </div>
+    <div class="panel-body">
 
-    <al-map center-on="station.address"></al-map>
+        <div class="alert alert-info clearfix" ng-if="res">
+            You have a {{ res.type }} reserved here.
+            <span class="label label-info" title="Remaining time">
+              <span class="glyphicon glyphicon-time"></span>
+              {{ res.countDown }}
+            </span>
 
-    <span class="al-station-address">{{station.address}}</span>
+            <button class="btn btn-danger btn-xs pull-right" ng-click="cancel(res.kind, res.reservation_id)">
+                <span class="glyphicon glyphicon-thumbs-down"></span>
+                Cancel
+            </button>
+        </div>
 
-    <div class="al-station-actions clearfix">
-      <button class="btn btn-primary al-station-action" title="Click to reserve" ng-click="reserve('car', station.name)">Cars
-        <span class="badge">{{station.cars}}</span>
-      </button>
+        <al-map center-on="station.address"></al-map>
 
-      <button class="btn btn-primary al-station-action" title="Click to reserve" ng-click="reserve('park', station.name)">Parks
-        <span class="badge">{{station.parks}}</span>
-      </button>
+        <div class="al-station-actions clearfix">
+            <button class="btn btn-primary al-station-action" ng-class="{'disabled': !station.cars}"
+                    title="Click to reserve" ng-click="reserve('car', station.id)">Cars
+                <span class="badge">{{station.cars}}</span>
+            </button>
+
+            <button class="btn btn-primary al-station-action" ng-class="{'disabled': !station.slots}"
+                    title="Click to reserve" ng-click="reserve('park', station.id)">Parks
+                <span class="badge">{{station.slots}}</span>
+            </button>
+        </div>
+
     </div>
-
-  </div>
 </div>

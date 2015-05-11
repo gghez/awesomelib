@@ -1,6 +1,6 @@
 angular.module('awesomelib').directive('alMap', [
-  'stations', '$q', 'geocoder',
-  function(stations, $q, geocoder) {
+  'stations', '$q', 'geoloc',
+  function(stations, $q, geoloc) {
 
     return {
       restrict: 'E',

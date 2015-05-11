@@ -1,4 +1,4 @@
-angular.module('awesomelib', ['ng', 'ngRoute', 'ngCookies']);
+angular.module('awesomelib', ['ng', 'ngRoute', 'ngCookies', 'bsLoader']);
 
 angular.module('awesomelib').config(['$routeProvider', function($routeProvider) {
   $routeProvider.when('/', {
@@ -9,11 +9,6 @@ angular.module('awesomelib').config(['$routeProvider', function($routeProvider) 
   $routeProvider.when('/login', {
     templateUrl: 'app/components/login/login.html',
     controller: 'loginController'
-  });
-
-  $routeProvider.when('/status', {
-    templateUrl: 'app/components/status/status.html',
-    controller: 'statusController'
   });
 
   $routeProvider.when('/rentals', {
@@ -101,279 +96,186 @@ angular.module('awesomelib').controller('loginController', ['$scope', 'login', '
 }]);
 
 angular.module('awesomelib').controller('pendingController', [
-  '$interval', '$scope', 'reservation', 'stations', '$routeParams', '$anchorScroll', '$location',
-  function($interval, $scope, reservation, stations, $routeParams, $anchorScroll, $location) {
+    '$interval', '$scope', 'reservation', 'stations', '$routeParams', '$anchorScroll', '$location',
+    function ($interval, $scope, reservation, stations, $routeParams, $anchorScroll, $location) {
 
-    var timers = [];
+        var timers = [];
 
-    function startCountDown(res) {
-      var toSplit = res.time.to.split(':'),
-        toHours = toSplit[0],
-        toMinutes = toSplit[1];
+        function startCountDown(res) {
+            timers.forEach(function (t) {
+                $interval.cancel(t);
+            });
+            timers.length = 0;
 
-      function update() {
-        var now = new Date();
-        var to = new Date(now);
-        to.setHours(toHours);
-        to.setMinutes(toMinutes);
-        to.setSeconds(0);
-        to.setMilliseconds(0);
-        if (to - now < 0) to.setDate(to.getDate() + 1);
+            var countDown = res.seconds_before_expiration;
 
-        var diff = Math.round((to - now) / 1000);
-        var hours = Math.floor(diff / 3600);
-        var minutes = Math.floor((diff % 3600) / 60);
-        var seconds = diff % 60;
+            function update() {
+                var hours = Math.floor(--countDown / 3600);
+                var minutes = Math.floor((countDown % 3600) / 60);
+                var seconds = countDown % 60;
 
-        res.countDown = (hours < 10 ? '0' : '') + hours + ':' +
-          (minutes < 10 ? '0' : '') + minutes + ':' +
-          (seconds < 10 ? '0' : '') + seconds;
-      }
+                res.countDown = (hours < 10 ? '0' : '') + hours + ':' +
+                    (minutes < 10 ? '0' : '') + minutes + ':' +
+                    (seconds < 10 ? '0' : '') + seconds;
+            }
 
-      timers.push($interval(update, 1000));
+            timers.push($interval(update, 1000));
+        }
+
+        function load() {
+            timers.forEach(function (t) {
+                $interval.cancel(t);
+            });
+            timers.length = 0;
+
+            reservation.pending().then(function (reservations) {
+                $scope.reservations = reservations;
+
+                $scope.reservations.forEach(function (res) {
+                    stations.get(res.station).then(function (stations) {
+                        res.station = stations[0];
+                    });
+
+                    if (res.status == 'PENDING') {
+                        startCountDown(res);
+                    }
+                });
+
+            });
+        }
+
+        load();
+
+        $scope.cancel = function (type, reservationId) {
+            reservation.cancel(type, reservationId).then(load);
+        };
+
+        $scope.reserve = function (type, stationId) {
+            return reservation.reserve(type, stationId).then(load);
+        };
     }
-
-    function load() {
-      timers.forEach(function(t) {
-        $interval.cancel(t);
-      });
-      timers.length = 0;
-
-      reservation.pending().then(function(reservations) {
-        $scope.reservations = reservations;
-
-        $scope.reservations.forEach(function(res) {
-          stations.get(res.station).then(function(stations){
-            res.station = stations[0];
-          });
-
-          if (res.status == 'PENDING') {
-            startCountDown(res);
-          }
-        });
-
-      });
-    }
-
-    load();
-
-    $scope.cancel = function(type, reservationId) {
-      reservation.cancel(type, reservationId).then(load);
-    };
-
-    $scope.reserve = function(type, stationId) {
-      return reservation.reserve(type, stationId).then(load);
-    };
-  }
 ]);
 
 angular.module('awesomelib').controller('rentalsController', [
-  '$scope', 'rentals', 'stations',
-  function($scope, rentals, stations) {
+    '$scope', 'rentals',
+    function ($scope, rentals) {
 
-    stations.all().then(function(stations) {
+        function load() {
+            rentals.get().then(function (history) {
+                var now = new Date();
 
-      rentals.get().then(function(rentals) {
-        $scope.rentals = rentals;
+                $scope.rentals = history.filter(function (rental) {
+                    var start = new Date(rental.start);
+                    return start.getYear() == now.getYear() && start.getMonth() == now.getMonth();
+                });
 
-        $scope.rentals.forEach(function(rental) {
+            });
+        }
 
-          stations.some(function(s) {
-            if (typeof rental.from == 'string' && s.address.toLowerCase() == rental.from.toLowerCase()) {
-              rental.from = s;
-            } else if (typeof rental.to == 'string' && s.address.toLowerCase() == rental.to.toLowerCase()) {
-              rental.to = s;
-            }
+        load();
 
-            if (typeof rental.from == 'object' && typeof rental.to == 'object') {
-              return true;
-            }
-
-          });
-
-          if (typeof rental.from == 'string') rental.from = {
-            address: rental.from
-          };
-          if (typeof rental.to == 'string') rental.to = {
-            address: rental.to
-          };
-
-
-        });
-
-      });
-
-    });
-
-
-
-  }
+    }
 ]);
 
 angular.module('awesomelib').controller('stationController', [
-  '$scope', 'stations', '$routeParams', 'car', '$interval',
-  function($scope, stations, $routeParams, car, $interval) {
+    '$scope', 'stations', '$routeParams', 'reservation', '$interval',
+    function ($scope, stations, $routeParams, reservation, $interval) {
 
-    var countStop = null;
+        var countStop = null;
 
-    function startCountDown(res) {
-      countStop && $interval.cancel(countStop);
+        function startCountDown(res) {
+            countStop && $interval.cancel(countStop);
+            var countDown = res.seconds_before_expiration;
 
-      var toSplit = res.time.to.split(':'),
-        toHours = toSplit[0],
-        toMinutes = toSplit[1];
+            function update() {
+                var hours = Math.floor(--countDown / 3600);
+                var minutes = Math.floor((countDown % 3600) / 60);
+                var seconds = countDown % 60;
 
-      function update() {
-        var now = new Date();
-        var to = new Date(now);
-        to.setHours(toHours);
-        to.setMinutes(toMinutes);
-        to.setSeconds(0);
-        to.setMilliseconds(0);
-        if (to - now < 0) to.setDate(to.getDate() + 1);
-
-        var diff = Math.round((to - now) / 1000);
-        var hours = Math.floor(diff / 3600);
-        var minutes = Math.floor((diff % 3600) / 60);
-        var seconds = diff % 60;
-
-        res.countDown = (hours < 10 ? '0' : '') + hours + ':' +
-          (minutes < 10 ? '0' : '') + minutes + ':' +
-          (seconds < 10 ? '0' : '') + seconds;
-      }
-
-      countStop = $interval(update, 1000);
-    }
-
-    function update() {
-      stations.near('car', $scope.station.address).then(function(_carNear) {
-        _carNear.some(function(s) {
-          if (s.address == $scope.station.address) {
-            $scope.station.cars = s.available;
-            console.debug && console.debug(s.available, 'cars at station');
-            return true;
-          }
-        });
-      });
-
-      stations.near('park', $scope.station.address).then(function(_carNear) {
-        _carNear.some(function(s) {
-          if (s.address == $scope.station.address) {
-            $scope.station.parks = s.available;
-            console.debug && console.debug(s.available, 'parks at station');
-            return true;
-          }
-        });
-      });
-
-      car.pending().then(function(reservations) {
-        if (!reservations.some(function(res) {
-            if (res.status == 'pending' && res.station.name.toLowerCase() == $scope.station.name.toLowerCase()) {
-              $scope.res = res;
-              startCountDown(res);
-              return true;
+                res.countDown = (hours < 10 ? '0' : '') + hours + ':' +
+                    (minutes < 10 ? '0' : '') + minutes + ':' +
+                    (seconds < 10 ? '0' : '') + seconds;
             }
-          })) {
-          $scope.res = null;
+
+            countStop = $interval(update, 1000);
         }
-      });
+
+        function load() {
+            stations.get($routeParams.stationId).then(function (stations) {
+                $scope.station = stations[0];
+
+                reservation.pending().then(function (reservations) {
+                    if (!reservations.some(function (r) {
+                            if (r.station == $scope.station.id && r.status == 'PENDING') {
+                                $scope.res = r;
+                                startCountDown(r);
+                                return true;
+                            }
+                        })) {
+                        $scope.res = null;
+                    }
+                });
+            });
+        }
+
+        load();
+
+        $scope.reserve = function (type, stationId) {
+            reservation.reserve(type, stationId).then(load);
+        };
+
+        $scope.cancel = function (kind, reservationId) {
+            var type = kind.replace('reservation', '');
+            reservation.cancel(type, reservationId).then(load);
+        };
     }
-
-    function load() {
-      stations.get($routeParams.stationId).then(function(station) {
-        station.cars = '-';
-        station.parks = '-';
-
-        $scope.station = station;
-      }).then(update);
-    }
-
-    load();
-
-    $scope.reserve = function(type, stationName) {
-      car.reserveByName(type, stationName).then(load);
-    };
-
-    $scope.cancel = function(type, reservationId) {
-      car.cancel(type, reservationId).then(load);
-    };
-  }
 ]);
 
 angular.module('awesomelib').controller('stationsController', [
-  '$scope', 'stations', '$location', 'car',
-  function($scope, stations, $location, car) {
+    '$scope', 'stations', '$location', 'reservation', 'geoloc', 'Loader',
+    function ($scope, stations, $location, reservation, geoloc, Loader) {
 
-    $scope.Math = Math;
+        $scope.Math = Math;
 
-    function load() {
-      stations.all().then(function(stations) {
-        $scope.stations = stations;
-        console.debug && console.debug(stations.length, 'stations retrieved.');
+        function load() {
+            Loader.start('stations');
 
-        navigator.geolocation && navigator.geolocation.getCurrentPosition(function(me) {
-          console.debug && console.debug('Me', me);
+            var _stations;
+            stations.all().then(function (stations) {
+                _stations = stations;
+                return geoloc.me();
+            }).then(function (me) {
+                me.lat = me.coords.latitude;
+                me.lng = me.coords.longitude;
 
-          $scope.$apply(function(){
-            me.lat = me.coords.latitude;
-            me.lng = me.coords.longitude;
-            $scope.stations.forEach(function(s) {
-              s.distance = Math.round(0.01 * distance(s, me)) / 10;
+                _stations.forEach(function (s) {
+                    s.distance = Math.round(0.01 * geoloc.distance(s, me)) / 10;
+                });
+
+                _stations.sort(function (s1, s2) {
+                    return s1.distance < s2.distance ? -1 : 1;
+                });
+
+                $scope.stations = _stations.slice(0, 10);
+
+                return geoloc.addressOf(me);
+            }).then(function (address) {
+                $scope.currentAddress = address;
+            }).finally(function () {
+                Loader.stop('stations');
             });
-          });
-          
-        });
+        }
 
-      });
+        load();
+
+        $scope.reserve = function (type, stationId) {
+            reservation.reserve(type, stationId).then(function () {
+                $location.path('/pending/' + type);
+            });
+        };
+
     }
-
-    function radians(num) {
-      return num * Math.PI / 180;
-    }
-
-    function distance(pos1, pos2) {
-      var R = 6371000; // metres
-      var φ1 = radians(pos1.lat);
-      var φ2 = radians(pos2.lat);
-      var Δφ = radians(pos2.lat - pos1.lat);
-      var Δλ = radians(pos2.lng - pos1.lng);
-
-      var a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-        Math.cos(φ1) * Math.cos(φ2) *
-        Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-      var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-      return R * c;
-    }
-
-    load();
-
-    $scope.reserve = function(type, stationName) {
-      car.reserveByName(type, stationName).then(function() {
-        $location.path('/pending/' + type);
-      });
-    };
-
-  }
 ]);
-
-angular.module('awesomelib').controller('statusController', ['$scope', 'status', function($scope, status) {
-
-  status.get().then(function(status) {
-    $scope.status = status;
-  });
-
-}]);
-
-angular.module('awesomelib').service('status', ['$http', function($http) {
-  return {
-    get: function() {
-      return $http.get('/rest/status').then(function(resp) {
-        return resp.data;
-      });
-    }
-  };
-}]);
 
 angular.module('awesomelib').filter('capitalize', [function() {
   return function(string) {
@@ -401,84 +303,93 @@ angular.module('awesomelib').service('login', [
   }
 ]);
 
-angular.module('awesomelib').service('geocalcul', [function() {
+angular.module('awesomelib').service('geoloc', ['$q', function ($q) {
+    var geocoder = new google.maps.Geocoder();
 
-  function radians(num) {
-    return num * Math.PI / 180;
-  }
-
-  function distance(pos1, pos2) {
-    var R = 6371000; // metres
-    var φ1 = radians(pos1.lat);
-    var φ2 = radians(pos2.lat);
-    var Δφ = radians(pos2.lat - pos1.lat);
-    var Δλ = radians(pos2.lng - pos1.lng);
-
-    var a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-      Math.cos(φ1) * Math.cos(φ2) *
-      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c;
-  }
-
-  return {
-    radians: radians,
-    distance: distance
-  };
-
-}]);
-
-angular.module('awesomelib').service('geocoder', ['$q', function($q) {
-  var geocoder = new google.maps.Geocoder();
-
-  return {
-    addressOf: function(latlng) {
-      var defer = $q.defer();
-
-      console.debug && console.debug('Geocoder.addressOf', latlng);
-      geocoder.geocode({
-        'latLng': latlng
-      }, function(results, status) {
-        if (status == google.maps.GeocoderStatus.OK) {
-          if (results[1]) {
-            console.debug && console.debug('=>', results[1].formatted_address);
-            defer.resolve(results[1].formatted_address);
-          } else {
-            defer.reject('No address found.');
-          }
-        } else {
-          defer.reject('Geocoder failed due to: ' + status);
-        }
-      });
-
-      return defer.promise;
-    },
-
-    coordOf: function(address) {
-      var defer = $q.defer();
-
-      console.debug && console.debug('Geocoder.coordOf', address);
-
-      geocoder.geocode({
-        'address': address
-      }, function(results, status) {
-        if (status == google.maps.GeocoderStatus.OK) {
-          console.debug && console.debug('=>', results[0].geometry.location);
-          defer.resolve(results[0].geometry.location);
-        } else {
-          defer.reject('Geocode was not successful for the following reason: ' + status);
-        }
-      });
-
-      return defer.promise;
+    function radians(num) {
+        return num * Math.PI / 180;
     }
-  };
+
+    function distance(pos1, pos2) {
+        var R = 6371000; // metres
+        var φ1 = radians(pos1.lat);
+        var φ2 = radians(pos2.lat);
+        var Δφ = radians(pos2.lat - pos1.lat);
+        var Δλ = radians(pos2.lng - pos1.lng);
+
+        var a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c;
+    }
+
+    return {
+        distance: distance,
+        addressOf: function (latlng) {
+            var defer = $q.defer();
+
+            console.debug && console.debug('Geocoder.addressOf', latlng);
+            geocoder.geocode({
+                'latLng': latlng
+            }, function (results, status) {
+                if (status == google.maps.GeocoderStatus.OK) {
+                    if (results[1]) {
+                        console.debug && console.debug('=>', results[1].formatted_address);
+                        defer.resolve(results[1].formatted_address);
+                    } else {
+                        defer.reject('No address found.');
+                    }
+                } else {
+                    defer.reject('Geocoder failed due to: ' + status);
+                }
+            });
+
+            return defer.promise;
+        },
+
+        coordOf: function (address) {
+            var defer = $q.defer();
+
+            console.debug && console.debug('Geocoder.coordOf', address);
+
+            geocoder.geocode({
+                'address': address
+            }, function (results, status) {
+                if (status == google.maps.GeocoderStatus.OK) {
+                    console.debug && console.debug('=>', results[0].geometry.location);
+                    defer.resolve(results[0].geometry.location);
+                } else {
+                    defer.reject('Geocode was not successful for the following reason: ' + status);
+                }
+            });
+
+            return defer.promise;
+        },
+
+        me: function () {
+            var defer = $q.defer();
+
+            if (!navigator.geolocation) {
+                defer.reject('No geolocation API.');
+            } else {
+                navigator.geolocation.getCurrentPosition(function (pos) {
+                    defer.resolve(pos);
+                }, function (err) {
+                    defer.reject(err);
+                });
+
+            }
+
+            return defer.promise;
+        }
+    };
 }]);
 
 angular.module('awesomelib').directive('alMap', [
-  'stations', '$q', 'geocoder',
-  function(stations, $q, geocoder) {
+  'stations', '$q', 'geoloc',
+  function(stations, $q, geoloc) {
 
     return {
       restrict: 'E',

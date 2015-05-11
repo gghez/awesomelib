@@ -1,20 +1,20 @@
 <div ng-repeat="rental in rentals" class="panel panel-default al-rental clearfix">
-  <div class="panel-body">
-    <span class="al-rental-date">{{ rental.start }}</span>
+    <div class="panel-body">
+        <span class="al-rental-date">{{ rental.start }}</span>
     <span class="al-rental-run">
       <span class="glyphicon glyphicon-log-out"></span>
-      <a ng-href="#/station/{{rental.from.station_id}}">{{ rental.from.name || rental.from.address }}</a><br/>
-      <a ng-href="#/station/{{rental.to.station_id}}">{{ rental.to.name || rental.to.address }}</a>
+      <a ng-href="#/station/{{rental.start_station_id}}">{{ rental.start_station_name }}</a><br/>
+      <a ng-href="#/station/{{rental.end_station_id}}">{{ rental.end_station_name }}</a>
       <span class="glyphicon glyphicon-log-in"></span>
     </span>
     <span class="al-rental-duration" ng-class="{
-      'text-danger':rental.amount == 3.66 || rental.amount > 5,
-      'text-success':rental.amount > 3.66 && rental.amount <= 5
-    }">{{ rental.duration }}</span>
+      'text-danger':rental.net_amount == 366 || rental.net_amount > 500,
+      'text-success':rental.net_amount > 366 && rental.net_amount <= 500
+    }">{{ rental.billed_duration / 60 }} min</span>
     <span class="al-rental-amount" ng-class="{
-      'text-danger':rental.amount == 3.66 || rental.amount > 5,
-      'text-success':rental.amount > 3.66 && rental.amount <= 5
-    }">{{ rental.amount }} €</span>
+      'text-danger':rental.net_amount == 366 || rental.net_amount > 500,
+      'text-success':rental.net_amount > 366 && rental.net_amount <= 500
+    }">{{ rental.net_amount / 100 }} €</span>
 
-  </div>
+    </div>
 </div>

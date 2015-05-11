@@ -1,30 +1,28 @@
-<form>
-  <div class="form-group">
-    <input type="text" class="form-control" ng-model="searchText" placeholder="Station name or address" />
-  </div>
-</form>
+<p class="text-center">You have been found here: <strong>{{currentAddress}}</strong></p>
 
-<div class="al-station-list" ng-if="searchText && searchText.length > 2">
-  <div ng-repeat="station in stations | filter:searchText" class="al-station panel panel-default">
-    <div class="panel-body">
+<div class="al-station-list">
+    <div ng-repeat="station in stations" class="al-station panel panel-default">
+        <div class="panel-body">
+            <a ng-href="#/station/{{station.id}}" class="al-station-name">{{station.public_name}}</a>
 
-      <a ng-href="#/station/{{station.station_id}}" class="al-station-name">{{station.name}}</a>
+            <div class="pull-right">
+            <button class="btn btn-primary al-station-btn" ng-class="{'disabled': !station.cars}"
+                    title="Click to reserve" ng-click="reserve('car', station.id)">Cars
+                <span class="badge">{{station.cars}}</span>
+            </button>
+            <button class="btn btn-primary al-station-btn" ng-class="{'disabled': !station.slots}"
+                    title="Click to reserve" ng-click="reserve('park', station.id)">Parks
+                <span class="badge">{{station.slots}}</span>
+            </button>
+            </div>
 
-      <div class="al-station-actions">
-        <button class="btn btn-primary btn-xs al-station-action" title="Click to reserve" ng-click="reserve('car', station.name)">Cars
-          <span class="badge">{{station.cars}}</span>
-        </button>
-        <button class="btn btn-primary btn-xs al-station-action" title="Click to reserve" ng-click="reserve('park', station.name)">Parks
-          <span class="badge">{{station.parks}}</span>
-        </button>
-      </div>
+            <span class="al-station-distance" ng-show="station.distance">
+                <span class="glyphicon glyphicon-map-marker"></span>
+                {{ station.distance }} km
+            </span>
 
-      <span class="al-station-distance" ng-show="station.distance">
-      <span class="glyphicon glyphicon-map-marker"></span>
-      {{ station.distance }} km
-      </span>
 
-      <span class="al-station-address">{{station.address}}</span>
+            <span class="al-station-address">{{station.address}}</span>
+        </div>
     </div>
-  </div>
 </div>

@@ -1,6 +1,8 @@
 node_modules
 *.log
-web/assets/**/*
+web/assets/css/styles.css
+web/assets/js/app.js
+web/assets/libs
 *~
 src/api/oauth2.js
 .idea

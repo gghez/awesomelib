@@ -1,0 +1,22 @@
+@-webkit-keyframes bs-loader-animation {
+    from {
+        -webkit-transform: rotate(0deg);
+    }
+    to {
+        -webkit-transform: rotate(360deg);
+    }
+}
+
+@keyframes bs-loader-animation {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.bs-loader {
+    -webkit-animation: bs-loader-animation 1.5s linear infinite;
+    animation: bs-loader-animation 1.5s linear infinite;
+}

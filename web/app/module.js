@@ -1,4 +1,4 @@
-angular.module('awesomelib', ['ng', 'ngRoute', 'ngCookies']);
+angular.module('awesomelib', ['ng', 'ngRoute', 'ngCookies', 'bsLoader']);
 
 angular.module('awesomelib').config(['$routeProvider', function($routeProvider) {
   $routeProvider.when('/', {
@@ -9,11 +9,6 @@ angular.module('awesomelib').config(['$routeProvider', function($routeProvider) 
   $routeProvider.when('/login', {
     templateUrl: 'app/components/login/login.html',
     controller: 'loginController'
-  });
-
-  $routeProvider.when('/status', {
-    templateUrl: 'app/components/status/status.html',
-    controller: 'statusController'
   });
 
   $routeProvider.when('/rentals', {
