@@ -27,6 +27,13 @@ angular.module('awesomelib').service('stations', ['$http', function($http) {
         console.debug && console.debug('[HTTP] Address ->', resp.data.length);
         return resp.data;
       });
+    },
+    shortcuts: function() {
+      console.debug && console.debug('[HTTP] Shortcuts');
+      return $http.get('/rest/stations/shortcuts').then(function(resp) {
+        console.debug && console.debug('[HTTP] Shortcuts ->', resp.data.length);
+        return resp.data;
+      });
     }
   };
 }]);

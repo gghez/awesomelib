@@ -1,15 +1,46 @@
-<div class="al-usage-block">
-  <span class="al-usage-label">Prev month</span>
-  <span class="al-usage-amount">{{usage.prev}} €</span>
-</div>
+<div class="row">
 
-<div class="al-usage-block">
-  <span class="al-usage-label">Current month</span>
-  <span class="al-usage-amount">{{usage.cur}} €</span>
-  <span class="al-usage-diff" ng-class="{
+  <div class="al-usage-block col-xs-6">
+    <span class="al-usage-label">Prev month</span>
+    <span class="al-usage-amount">{{usage.prev}} €</span>
+  </div>
+
+  <div class="al-usage-block col-xs-6">
+    <span class="al-usage-label">Current month</span>
+    <span class="al-usage-amount">{{usage.cur}} €</span>
+    <span class="al-usage-diff" ng-class="{
+
         'text-success':usage.cur - usage.prev < 0,
+
         'text-danger':usage.cur - usage.prev > 0
+
       }">{{ Math.round(100 * (usage.cur - usage.prev)) / 100 }} €</span>
+  </div>
+</div>
+<!-- row -->
+
+<div class="row" ng-repeat="station in shortcuts">
+  <div class="col-xs-2">
+    <a ng-href="#/station/{{station.station_id}}"><strong>{{station.name}}</strong></a>
+  </div>
+  <div class="col-xs-5">
+    <button class="btn btn-primary btn-block" ng-class="{'disabled':!station.cars}" ng-click="reserve('car', station.hrid)">
+      <span class="glyphicon glyphicon-thumbs-up"></span>
+      Car
+      <span class="badge">{{station.cars}}</span>
+    </button>
+  </div>
+  <div class="col-xs-5">
+    <button class="btn btn-primary btn-block" ng-class="{'disabled':!station.parks}" ng-click="reserve('park', station.hrid)">
+      <span class="glyphicon glyphicon-thumbs-up"></span>
+      Park
+      <span class="badge">{{station.parks}}</span>
+    </button>
+  </div>
 </div>
 
-<al-map follow-me="true"></al-map>
+<div class="row">
+  <div class="col-sm-12">
+    <al-map follow-me="true"></al-map>
+  </div>
+</div>

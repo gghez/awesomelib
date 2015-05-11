@@ -35,7 +35,6 @@ module.exports.all = function(options) {
   utils.setTimeout(req, options.timeout || 5000);
 
   req.on('error', function(err) {
-    options.debug && console.error('Request Error');
     defer.reject(err);
   });
 
@@ -44,7 +43,7 @@ module.exports.all = function(options) {
   return defer.promise;
 };
 
-module.exports.near = function(options) {
+function near(options) {
   var defer = Q.defer();
 
   var path = '/reservation/stations/available/' + options.type + '/?' + querystring.stringify({
@@ -67,10 +66,11 @@ module.exports.near = function(options) {
     options.debug && console.log('HTTP status', res.statusCode);
 
     utils.respBody(res).then(function(body) {
-      var stations = body.toString();
-      defer.resolve(JSON.parse(stations));
+      var stations = JSON.parse(body.toString());
+      defer.resolve(stations.map(function(s) {
+        return (s.type = options.type) && s;
+      }));
     }).catch(function(err) {
-      options.debug && console.error('Body Parsing failed.');
       defer.reject(err);
     })
   });
@@ -78,11 +78,24 @@ module.exports.near = function(options) {
   utils.setTimeout(req, options.timeout || 5000);
 
   req.on('error', function(err) {
-    options.debug && console.error('Request Error');
     defer.reject(err);
   });
 
   req.end();
 
   return defer.promise;
+}
+
+module.exports.near = function(options) {
+  if (options.type != 'car' && options.type != 'park') {
+    options.type = 'car';
+    return near(options).then(function(carStations) {
+      options.type = 'park';
+      return near(options).then(function(parkStations) {
+        return parkStations.concat(carStations);
+      });
+    });
+  } else {
+    return near(options);
+  }
 };

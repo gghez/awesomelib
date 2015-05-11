@@ -7,7 +7,7 @@ router.get('/reserve/:type/:stationId', function(req, res, next) {
     type: req.params.type,
     stationId: req.params.stationId,
     cookies: req.user.cookies,
-    debug: req.app.get('debug')
+    debug: req.debug
   }).then(function(status) {
     res.send(status);
   }).catch(next);
@@ -19,7 +19,7 @@ router.get('/cancel/:type/:reservation', function(req, res, next) {
     type: req.params.type,
     reservationId: req.params.reservation,
     cookies: req.user.cookies,
-    debug: req.app.get('debug')
+    debug: req.debug
   }).then(function() {
     res.sendStatus(204);
   }).catch(next);
@@ -28,7 +28,7 @@ router.get('/cancel/:type/:reservation', function(req, res, next) {
 router.get('/pending', function(req, res, next) {
   car.pending({
     cookies: req.user.cookies,
-    debug: req.app.get('debug')
+    debug: req.debug
   }).then(function(reservations) {
     res.send(reservations);
   }).catch(next);

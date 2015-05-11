@@ -6,6 +6,11 @@ var app = express();
 app.disable('etag');
 app.use(morgan('common'));
 
+app.use(function(req, res, next){
+  req.debug = req.app.get('debug');
+  next();
+});
+
 app.use('/assets/libs/', express.static(__dirname + '/../node_modules/'));
 app.use('/', express.static(__dirname + '/../web/'));
 

@@ -4,6 +4,7 @@ var login = require('../login');
 var crypto = require('crypto');
 var utils = require('../utils');
 
+// Create authentication context from current request
 router.use(function(req, res, next) {
   var cookies = utils.cookiesContainer(req.header('Cookie'));
   var token = req.header('AL-TOKEN') || cookies['AL-TOKEN'];
@@ -29,9 +30,10 @@ router.use(function(req, res, next) {
   }
 });
 
+// Authenticate current user
 router.post('/auth', bodyParser.json(), function(req, res, next) {
   var loginOptions = req.body;
-  loginOptions.debug = req.app.get('debug');
+  loginOptions.debug = req.debug;
 
   var users = req.app.get('db').collection('users');
 
@@ -76,6 +78,7 @@ router.post('/auth', bodyParser.json(), function(req, res, next) {
   }).catch(next);
 });
 
+// Ensure following handlers are executed in authenticated context
 router.use(function(req, res, next) {
   if (!req.user) {
     res.sendStatus(401);

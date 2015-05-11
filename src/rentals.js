@@ -69,7 +69,6 @@ module.exports = function(options) {
           });
         }
       }).catch(function(err) {
-        options.debug && console.error('Body Parsing failed.');
         defer.reject(err);
       });
     });
@@ -77,7 +76,6 @@ module.exports = function(options) {
     utils.setTimeout(req, options.timeout || 5000);
 
     req.on('error', function(err) {
-      options.debug && console.error('Request Error');
       defer.reject(err);
     });
 

@@ -6,7 +6,7 @@ router.get('/', function(req, res, next) {
 
   rentals({
     cookies: req.user.cookies,
-    debug: req.app.get('debug')
+    debug: req.debug
   }).then(function(rentals) {
     res.send(rentals);
   }).catch(next);

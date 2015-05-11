@@ -12,10 +12,10 @@ router.get('/', function(req, res, next) {
       start: prevStart,
       end: prevEnd,
       cookies: req.user.cookies,
-      debug: req.app.get('debug')
+      debug: req.debug
     }), rentals({
       cookies: req.user.cookies,
-      debug: req.app.get('debug')
+      debug: req.debug
     })])
     .spread(function(prevRentals, rentals) {
       var usage = Math.round(100 * rentals.reduce(function(prev, cur) {
