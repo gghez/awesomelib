@@ -1,8 +1,8 @@
 angular.module('awesomelib').controller('pendingController', [
-  '$interval', '$scope', 'car', 'stations', '$routeParams', '$anchorScroll', '$location',
-  function($interval, $scope, car, stations, $routeParams, $anchorScroll, $location) {
+  '$interval', '$scope', 'reservation', 'stations', '$routeParams', '$anchorScroll', '$location',
+  function($interval, $scope, reservation, stations, $routeParams, $anchorScroll, $location) {
 
-    var allStations, timers = [];
+    var timers = [];
 
     function startCountDown(res) {
       var toSplit = res.time.to.split(':'),
@@ -17,7 +17,7 @@ angular.module('awesomelib').controller('pendingController', [
         to.setSeconds(0);
         to.setMilliseconds(0);
         if (to - now < 0) to.setDate(to.getDate() + 1);
-        
+
         var diff = Math.round((to - now) / 1000);
         var hours = Math.floor(diff / 3600);
         var minutes = Math.floor((diff % 3600) / 60);
@@ -37,18 +37,15 @@ angular.module('awesomelib').controller('pendingController', [
       });
       timers.length = 0;
 
-      car.pending().then(function(reservations) {
+      reservation.pending().then(function(reservations) {
         $scope.reservations = reservations;
 
         $scope.reservations.forEach(function(res) {
-          allStations.some(function(s){
-            if (s.name.toLowerCase() == res.station.name.toLowerCase()){
-              res.station = s;
-              return true;
-            }
-          })
+          stations.get(res.station).then(function(stations){
+            res.station = stations[0];
+          });
 
-          if (res.status.toLowerCase() == 'pending') {
+          if (res.status == 'PENDING') {
             startCountDown(res);
           }
         });
@@ -56,20 +53,14 @@ angular.module('awesomelib').controller('pendingController', [
       });
     }
 
-    stations.all().then(function(all) {
-      allStations = all;
-    }).then(load);
+    load();
 
     $scope.cancel = function(type, reservationId) {
-      car.cancel(type, reservationId).then(function() {
-        load();
-      });
+      reservation.cancel(type, reservationId).then(load);
     };
 
-    $scope.reserve = function(type, stationName) {
-
-      return car.reserveByName(type, stationName).then(load);
-
+    $scope.reserve = function(type, stationId) {
+      return reservation.reserve(type, stationId).then(load);
     };
   }
 ]);

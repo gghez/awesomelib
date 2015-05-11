@@ -3,29 +3,29 @@
   <div ng-repeat="type in types">
     <a ng-attr-id="pending-{{type}}"></a>
     <h2>{{type | capitalize }}
-      <span class="badge">{{ reservations | filter:{type:type} | length }}</span>
+      <span class="badge">{{ reservations | filter:{kind:type+'reservation'} | length }}</span>
     </h2>
 
-    <div ng-repeat="res in reservations | filter:{type:type}" class="alert al-pending clearfix" ng-class="{
-  'alert-danger': res.status == 'canceled',
-  'alert-success': res.status == 'taken',
-  'alert-warning': res.status == 'pending'
+    <div ng-repeat="res in reservations | filter:{kind:type+'reservation'}" class="alert al-pending clearfix" ng-class="{
+  'alert-danger': res.status == 'CANCELLED',
+  'alert-success': res.status == 'TAKEN',
+  'alert-warning': res.status == 'PENDING'
 }">
       <span class="al-pending-status">{{ res.status }}</span>
 
-      <span class="al-pending-date">{{ res.date + ' ' + res.time.from + ' to ' + res.time.to }}</span>
-      <span ng-show="res.status == 'pending'" class="al-countdown label label-warning" title="Remaining time">
+      <span class="al-pending-date">{{ res.created_at + ' to ' + res.expires_at }}</span>
+      <span ng-show="res.status == 'PENDING'" class="al-countdown label label-warning" title="Remaining time">
         <span class="glyphicon glyphicon-time"></span> {{ res.countDown }}
       </span>
 
-      <a ng-href="#/station/{{ res.station.station_id }}" class="al-pending-station">{{ res.station.name }}</a>
+      <a ng-href="#/station/{{ res.station.id }}" class="al-pending-station">{{ res.station.public_name }}</a>
 
-      <button class="btn btn-danger btn-xs al-pending-action" ng-show="res.status == 'pending'" ng-click="cancel(type, res.reservationId)">
+      <button class="btn btn-danger btn-xs al-pending-action" ng-show="res.status == 'PENDING'" ng-click="cancel(type, res.reservation_id)">
         <span class="glyphicon glyphicon-thumbs-down"></span>
         Cancel
       </button>
 
-      <button class="btn btn-primary btn-xs al-pending-action" ng-show="res.status == 'canceled'" ng-click="reserve(type, res.station.name)">
+      <button class="btn btn-primary btn-xs al-pending-action" ng-show="res.status == 'CANCELLED'" ng-click="reserve(type, res.station.id)">
         <span class="glyphicon glyphicon-thumbs-up"></span>
         Reserve
       </button>

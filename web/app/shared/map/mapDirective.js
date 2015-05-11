@@ -76,23 +76,23 @@ angular.module('awesomelib').directive('alMap', [
 
             map && map.panTo(me);
 
-            geocoder.addressOf(me).then(function(address) {
-              console.debug && console.debug('Me detected at', address);
-              return stations.near('car', address);
-            }).then(function(stations) {
-              console.debug && console.debug(stations.length, 'stations around.');
-              sMarks.forEach(function(sMark) {
-                sMark.setMap(null);
-              });
-              stations.forEach(function(station) {
-                var sMark = new google.maps.Marker({
-                  position: new google.maps.LatLng(station.lat, station.lng),
-                  map: map,
-                  title: station.name
-                });
-                sMarks.push(sMark);
-              });
-            });
+            // geocoder.addressOf(me).then(function(address) {
+            //   console.debug && console.debug('Me detected at', address);
+            //   return stations.near('car', address);
+            // }).then(function(stations) {
+            //   console.debug && console.debug(stations.length, 'stations around.');
+            //   sMarks.forEach(function(sMark) {
+            //     sMark.setMap(null);
+            //   });
+            //   stations.forEach(function(station) {
+            //     var sMark = new google.maps.Marker({
+            //       position: new google.maps.LatLng(station.lat, station.lng),
+            //       map: map,
+            //       title: station.name
+            //     });
+            //     sMarks.push(sMark);
+            //   });
+            // });
 
           }, function(err) {
             console.error(err);

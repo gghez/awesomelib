@@ -29,7 +29,7 @@ module.exports = function(grunt) {
       local: {
         options: {
           script: 'bin/index.js',
-          args: ['--service', '--debug'],
+          args: ['--debug'],
           port: 3788
         }
       }
