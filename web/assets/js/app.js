@@ -289,6 +289,152 @@ angular.module('awesomelib').controller('stationsController', [
     }
 ]);
 
+angular.module('bsLoader', ['ng', 'angularNotification']);
+
+angular.module('bsLoader').directive('bsLoader', ['Loader', '$timeout', function (Loader, $timeout) {
+
+    var DEFAULT_LOADER_TEXT = 'Loading...';
+
+    return {
+        template: '<div ng-show="loading"><span class="bs-loader glyphicon glyphicon-refresh"></span> ' +
+        '<span class="bs-loader-text" ng-bind="loaderText"></span></div>',
+        replace: true,
+        restrict: 'E',
+        scope: {},
+        link: function (scope) {
+            var timer = null;
+
+            function onLoadingStateChanged(loading, text) {
+                scope.$evalAsync(function () {
+                    if (loading) {
+                        timer && $timeout.cancel(timer);
+                        scope.loading = loading;
+                        scope.loaderText = text || DEFAULT_LOADER_TEXT;
+                    } else {
+                        timer = $timeout(function () {
+                            scope.loading = false;
+                        }, 500);
+                    }
+                });
+            }
+
+            Loader.register(onLoadingStateChanged);
+
+            scope.$on('$destroy', function () {
+                Loader.unregister(onLoadingStateChanged);
+            });
+        }
+    };
+
+}]);
+
+angular.module('bsLoader').directive('bsLoaderHide', ['Loader', function (Loader) {
+
+    return {
+        restrict: 'A',
+        link: function (scope, element) {
+            function onLoadingStateChanged(loading) {
+                if (loading) {
+                    element.addClass('ng-hide');
+                } else {
+                    element.removeClass('ng-hide');
+                }
+            }
+
+            Loader.register(onLoadingStateChanged);
+
+            scope.$on('$destroy', function () {
+                Loader.unregister(onLoadingStateChanged);
+            });
+        }
+    };
+
+}]);
+
+angular.module('bsLoader').service('Loader', ['Notification', function (Notification) {
+
+    var LOADER_CHANNEL = 'loader';
+
+    var loadStates = {};
+
+    function firstLoadingTaskText() {
+        var text = '';
+
+        Object.keys(loadStates).some(function (t) {
+            if (loadStates[t].loading) {
+                text = loadStates[t].text;
+                return true;
+            }
+        });
+
+        return text;
+    }
+
+    return {
+        register: function (cb) {
+            cb(this.isLoading(), firstLoadingTaskText());
+            Notification.register(LOADER_CHANNEL, cb);
+        },
+
+        unregister: function (cb) {
+            Notification.unregister(LOADER_CHANNEL, cb);
+        },
+
+        start: function (task, text) {
+            loadStates[task] = {text: text, loading: true};
+            Notification.notify(LOADER_CHANNEL, this.isLoading(), text);
+        },
+
+        stop: function (task) {
+            loadStates[task].loading = false;
+            Notification.notify(LOADER_CHANNEL, this.isLoading(), firstLoadingTaskText());
+        },
+
+        isLoading: function () {
+            return Object.keys(loadStates).some(function (task) {
+                return loadStates[task].loading;
+            });
+        }
+    };
+
+}]);
+
+angular.module('bsLoader').directive('bsLoaderShow', ['Loader', function (Loader) {
+
+    return {
+        restrict: 'A',
+        link: function (scope, element) {
+            function onLoadingStateChanged(loading) {
+                if (!loading) {
+                    element.addClass('ng-hide');
+                } else {
+                    element.removeClass('ng-hide');
+                }
+            }
+
+            Loader.register(onLoadingStateChanged);
+
+            scope.$on('$destroy', function () {
+                Loader.unregister(onLoadingStateChanged);
+            });
+        }
+    };
+
+}]);
+
+angular.module('awesomelib').service('control', [
+    '$http',
+    function ($http) {
+        return {
+            version: function () {
+                return $http.get('/api/version').then(function (resp) {
+                    return resp.data.version;
+                });
+            }
+        };
+    }
+]);
+
 angular.module('awesomelib').filter('capitalize', [function() {
   return function(string) {
     return string && typeof string == 'string' && string[0].toUpperCase() + string.substr(1);
@@ -326,6 +472,17 @@ angular.module('awesomelib').service('login', [
       }
     };
   }
+]);
+
+angular.module('awesomelib').controller('mainController', [
+    '$scope', 'control',
+    function ($scope, control) {
+
+        control.version().then(function (version) {
+            $scope.version = version;
+        });
+
+    }
 ]);
 
 angular.module('awesomelib').service('geoloc', ['$q', function ($q) {

@@ -28,7 +28,7 @@ module.exports = function (grunt) {
         express: {
             local: {
                 options: {
-                    script: 'bin/index.js',
+                    script: 'bin/awesomelib.js',
                     args: ['--debug'],
                     port: 3788
                 }
