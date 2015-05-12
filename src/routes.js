@@ -7,7 +7,12 @@ router.get('/ping', function (req, res, next) {
 });
 
 router.get('/update',function(req, res, next){
-    var child = child_process.spawn('npm', ['install']);
+    var child = child_process.spawn('npm', ['install'], {
+        cwd: __dirname + '/../'
+    });
+
+    console.log('Spawn npm install on', __dirname + '/../');
+
     var stdout = [], stderr = [];
     child.stdout.on('data', function (buffer) {
         stdout.push(buffer);
