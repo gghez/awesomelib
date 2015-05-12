@@ -47,14 +47,13 @@ angular.module('awesomelib').service('geoloc', ['$q', function ($q) {
         coordOf: function (address) {
             var defer = $q.defer();
 
-            console.debug && console.debug('Geocoder.coordOf', address);
-
             geocoder.geocode({
                 'address': address
             }, function (results, status) {
                 if (status == google.maps.GeocoderStatus.OK) {
-                    console.debug && console.debug('=>', results[0].geometry.location);
-                    defer.resolve(results[0].geometry.location);
+                    var latlng = {lat: results[0].geometry.location.A, lng: results[0].geometry.location.F};
+                    console.debug && console.debug('Geocoder.coordOf', address, latlng);
+                    defer.resolve(latlng);
                 } else {
                     defer.reject('Geocode was not successful for the following reason: ' + status);
                 }
@@ -73,11 +72,27 @@ angular.module('awesomelib').service('geoloc', ['$q', function ($q) {
                     defer.resolve(pos);
                 }, function (err) {
                     defer.reject(err);
+                }, {
+                    maximumAge: 0,
+                    enableHighAccuracy: true
                 });
-
             }
 
             return defer.promise;
+        },
+
+        watchMe: function (callback) {
+            if (!navigator.geolocation) {
+                console.error('No geolocation API.');
+                return;
+            }
+
+            navigator.geolocation.watchPosition(callback, function (err) {
+                console.error('geoloc watch', err);
+            }, {
+                maximumAge: 0,
+                enableHighAccuracy: true
+            });
         }
     };
 }]);

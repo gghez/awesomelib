@@ -25,6 +25,8 @@ angular.module('awesomelib').controller('stationController', [
             stations.get($routeParams.stationId).then(function (stations) {
                 $scope.station = stations[0];
 
+                $scope.station.full_address = [$scope.station.address, $scope.station.city].join(', ');
+
                 reservation.pending().then(function (reservations) {
                     if (!reservations.some(function (r) {
                             if (r.station == $scope.station.id && r.status == 'PENDING') {
