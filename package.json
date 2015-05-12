@@ -1,6 +1,6 @@
 {
   "name": "awesomelib",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "Tools for personal information retrieving.",
   "repository": {
     "type": "git",
@@ -30,13 +30,14 @@
   "author": "Gregory GHEZ",
   "scripts": {
     "postinstall": "grunt compile",
-    "start": "node bin/index.js --service"
+    "start": "node bin/awesomelib.js",
+    "stop": "pkill -f awesomelib"
   },
   "license": "MIT",
   "bin": {
-    "awesomelib": "bin/index.js"
+    "awesomelib": "bin/awesomelib.js"
   },
-  "main": "bin/index.js",
+  "main": "bin/awesomelib.js",
   "preferGlobal": true,
   "engines": {
     "node": ">=0.10.0"

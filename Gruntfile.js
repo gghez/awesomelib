@@ -7,11 +7,6 @@ module.exports = function (grunt) {
                 files: {
                     'web/assets/css/styles.css': 'web/app/main.less'
                 }
-            },
-            'bs-loader': {
-                files: {
-                    'web/assets/libs/bs-loader/bs-loader.css': 'node_modules/bs-loader/bsLoader.less'
-                }
             }
         },
 
@@ -44,10 +39,6 @@ module.exports = function (grunt) {
             app: {
                 src: ['web/app/module.js', 'web/app/**/*.js'],
                 dest: 'web/assets/js/app.js'
-            },
-            'bs-loader': {
-                src: ['node_modules/bs-loader/bsLoader.js', 'node_modules/bs-loader/*{Directive,Service}.js'],
-                dest: 'web/assets/libs/bs-loader/bs-loader.js'
             }
         },
 
