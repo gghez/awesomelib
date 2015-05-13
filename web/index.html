@@ -64,11 +64,12 @@
         <!-- /.container -->
     </nav>
     <script>
+        function collapse(){
+            $('#bs-example-navbar-collapse-1').removeClass('in');
+        }
+
         $(document).ready(function () {
-            var $collapse = $('#bs-example-navbar-collapse-1');
-            $collapse.find('li').click(function (e) {
-                $collapse.removeClass('in');
-            });
+            $('#bs-example-navbar-collapse-1 li, .navbar-brand').click(collapse);
         });
     </script>
 </header>
