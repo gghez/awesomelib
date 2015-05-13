@@ -1,6 +1,54 @@
 angular.module('awesomelib').directive('alMap', [
-    'stations', '$q', 'geoloc',
-    function (stations, $q, geoloc) {
+    'stations', '$q', 'geoloc', '$timeout',
+    function (stations, $q, geoloc, $timeout) {
+
+        var markerMe = null;
+
+        function displayMe(map, latlng) {
+            if (markerMe) markerMe.setMap(null);
+
+            markerMe = new google.maps.Marker({
+                position: latlng,
+                map: map,
+                title: "You are here!",
+                icon: 'assets/img/blue-circle-10.png'
+            });
+        }
+
+        var markers = [];
+
+        function displayStations(map, latlng) {
+            markers.forEach(function (m) {
+                m.setMap(null);
+            });
+            markers.length = 0;
+
+            stations.near(latlng).then(function (stations) {
+                stations.forEach(function (station, i) {
+                    $timeout(function () {
+                        var marker = new google.maps.Marker({
+                            map: map,
+                            position: {lat: station.lat, lng: station.lng},
+                            animation: google.maps.Animation.DROP,
+                            title: station.public_name
+                        });
+
+                        //function toggleBounce() {
+                        //
+                        //    if (marker.getAnimation() != null) {
+                        //        marker.setAnimation(null);
+                        //    } else {
+                        //        marker.setAnimation(google.maps.Animation.BOUNCE);
+                        //    }
+                        //}
+                        //
+                        //google.maps.event.addListener(marker, 'click', toggleBounce);
+
+                        markers.push(marker);
+                    }, i * 100);
+                });
+            });
+        }
 
         return {
             restrict: 'E',
@@ -12,14 +60,11 @@ angular.module('awesomelib').directive('alMap', [
             },
             link: function (scope, element, attrs) {
 
-                var map, // Map
-                    me, // LatLng
-                    markerMe, // Marker
-                    sMarks = []; // Stations markers
+                var map;
 
                 function initialize() {
                     var mapOptions = {
-                        zoom: 15
+                        zoom: 16
                     };
 
                     map = new google.maps.Map(element[0], mapOptions);
@@ -27,81 +72,41 @@ angular.module('awesomelib').directive('alMap', [
 
                 initialize();
 
-                var centerMarker = null;
                 scope.$watch('centerOn', function (center) {
                     if (!center) {
                         return;
                     }
 
-                    map.set('zoom', 16);
-
-                    if (centerMarker) {
-                        centerMarker.setMap(null);
-                    }
-
-                    if (center.lat && center.lng) {
-                        map.panTo(center);
-
-                        geoloc.addressOf(center).then(function (address) {
-                            centerMarker = new google.maps.Marker({
-                                map: map,
-                                position: center,
-                                title: address
-                            });
-                        });
-
-                    } else if (typeof center == 'string') {
-                        geoloc.coordOf(center).then(function (latlng) {
+                    ((center.lat && center.lng) ? $q.when(center) : geoloc.coordOf(center))
+                        .then(function (latlng) {
                             map.panTo(latlng);
-                            centerMarker = new google.maps.Marker({
-                                map: map,
-                                position: latlng,
-                                title: center
-                            });
+                            displayStations(map, latlng);
+                        });
+                });
+
+
+                function onPositionChange(position) {
+                    var me = {lat: position.coords.latitude, lng: position.coords.longitude};
+
+                    map && map.panTo(me);
+
+                    displayMe(map, me);
+                    displayStations(map, me);
+                }
+
+                var watchId = null;
+                scope.$watch('followMe', function (activated) {
+                    if (!activated) {
+                        watchId && navigator.geolocation.clearWatch(watchId);
+                    } else if (navigator.geolocation) {
+                        watchId = navigator.geolocation.watchPosition(onPositionChange, function (err) {
+                            console.warn('Cannot watch current position.', err);
+                        }, {
+                            maximumAge: 0,
+                            enableHighAccuracy: true
                         });
                     }
                 });
-
-                if (scope.followMe) {
-                    navigator.geolocation.watchPosition(function (position) {
-                        me = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
-
-                        if (markerMe) markerMe.setMap(null);
-
-                        markerMe = new google.maps.Marker({
-                            position: me,
-                            map: map,
-                            title: "You are here!"
-                        });
-
-                        map && map.panTo(me);
-
-                        // geocoder.addressOf(me).then(function(address) {
-                        //   console.debug && console.debug('Me detected at', address);
-                        //   return stations.near('car', address);
-                        // }).then(function(stations) {
-                        //   console.debug && console.debug(stations.length, 'stations around.');
-                        //   sMarks.forEach(function(sMark) {
-                        //     sMark.setMap(null);
-                        //   });
-                        //   stations.forEach(function(station) {
-                        //     var sMark = new google.maps.Marker({
-                        //       position: new google.maps.LatLng(station.lat, station.lng),
-                        //       map: map,
-                        //       title: station.name
-                        //     });
-                        //     sMarks.push(sMark);
-                        //   });
-                        // });
-
-                    }, function (err) {
-                        console.error(err);
-                    }, {
-                        maximumAge: 0,
-                        enableHighAccuracy: true
-                    });
-                } // end scope.followMe
-
 
             }
         };

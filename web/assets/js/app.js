@@ -42,45 +42,49 @@ angular.module('awesomelib').config(['$routeProvider', function($routeProvider) 
 }]);
 
 angular.module('awesomelib').controller('homeController', [
-  '$scope', 'rentals', '$window', '$location', 'stations', 'reservation',
-  function($scope, rentals, $window, $location, stations, reservation) {
+    '$scope', 'rentals', '$window', '$location', 'geoloc', 'info',
+    function ($scope, rentals, $window, $location, geoloc, info) {
 
-    function load() {
-      rentals.get().then(function(history){
-        var now = new Date();
-        var prev = new Date(now);
-        prev.setDate(0);
+        function load() {
+            rentals.get().then(function (history) {
+                var now = new Date();
+                var prev = new Date(now);
+                prev.setDate(0);
 
-        $scope.usage ={
-          cur: history.filter(function(rental){
-            var start = new Date(rental.start);
-            return start.getYear() == now.getYear() && start.getMonth() == now.getMonth();
-          }).reduce(function(sum, rental){
-            return sum += rental.net_amount;
-          }, 0) / 100,
-          prev: history.filter(function(rental){
-            var start = new Date(rental.start);
-            return start.getYear() == prev.getYear() && start.getMonth() == prev.getMonth();
-          }).reduce(function(sum, rental){
-            return sum += rental.net_amount;
-          }, 0) / 100
+                $scope.usage = {
+                    cur: history.filter(function (rental) {
+                        var start = new Date(rental.start);
+                        return start.getYear() == now.getYear() && start.getMonth() == now.getMonth();
+                    }).reduce(function (sum, rental) {
+                        return sum + rental.net_amount;
+                    }, 0) / 100,
+                    prev: history.filter(function (rental) {
+                        var start = new Date(rental.start);
+                        return start.getYear() == prev.getYear() && start.getMonth() == prev.getMonth();
+                    }).reduce(function (sum, rental) {
+                        return sum + rental.net_amount;
+                    }, 0) / 100
+                };
+
+                $scope.usage.diff = $scope.usage.cur - $scope.usage.prev;
+            });
+
+            info.get().then(function (ci) {
+                return geoloc.coordOf([ci.address.street, ci.address.zipcode, ci.address.city].join(', '));
+            }).then(function (latlng) {
+                $scope.initialPosition = latlng;
+            });
+        }
+
+        load();
+
+        $scope.reserve = function (type, stationId) {
+            car.reserve(type, stationId).then(function () {
+                $location.path('/pending/' + type);
+            });
         };
 
-        $scope.usage.diff = $scope.usage.cur - $scope.usage.prev;
-
-      });
-
     }
-
-    load();
-
-    $scope.reserve = function(type, stationId){
-      car.reserve(type, stationId).then(function(){
-        $location.path('/pending/' + type);
-      });
-    };
-
-  }
 ]);
 
 angular.module('awesomelib').controller('loginController', ['$scope', 'login', '$location', function($scope, login, $location){
@@ -237,42 +241,28 @@ angular.module('awesomelib').controller('stationsController', [
     '$scope', 'stations', '$location', 'reservation', 'geoloc', 'Loader', 'info',
     function ($scope, stations, $location, reservation, geoloc, Loader, info) {
 
-
         function load() {
             Loader.start('stations');
 
-            var _stations;
+            geoloc.me().then(function (me) { // try current GPS location
+                me.lat = me.coords.latitude;
+                me.lng = me.coords.longitude;
 
-            stations.all().then(function (stations) {
-                _stations = stations;
-            }).then(function () { // Determine reference position
-                return geoloc.me().then(function (me) { // try current GPS location
-                    me.lat = me.coords.latitude;
-                    me.lng = me.coords.longitude;
+                return geoloc.addressOf(me).then(function (address) {
+                    $scope.currentAddress = address;
+                    return me;
+                });
+            }).catch(function (err) { // Else try customer home location
+                console.warn('geoloc failed, use customer home.', err);
 
-                    return geoloc.addressOf(me).then(function (address) {
-                        $scope.currentAddress = address;
-                        return me;
-                    });
-                }).catch(function (err) { // Else try customer home location
-                    console.warn('geoloc failed, use customer home.', err);
-
-                    return info.get().then(function (ci) {
-                        $scope.currentAddress = [ci.address.street, ci.address.zipcode, ci.address.city].join(', ');
-                        return geoloc.coordOf($scope.currentAddress);
-                    });
+                return info.get().then(function (ci) {
+                    $scope.currentAddress = [ci.address.street, ci.address.zipcode, ci.address.city].join(', ');
+                    return geoloc.coordOf($scope.currentAddress);
                 });
             }).then(function (pos) { // Select nearest stations from reference position
-                console.debug && console.debug('Reference position', pos);
-                _stations.forEach(function (s) {
-                    s.distance = Math.round(0.01 * geoloc.distance(s, pos)) / 10;
-                });
-
-                _stations.sort(function (s1, s2) {
-                    return s1.distance < s2.distance ? -1 : 1;
-                });
-
-                $scope.stations = _stations.slice(0, 10);
+                return stations.near(pos);
+            }).then(function (stations) {
+                $scope.stations = stations;
             }).finally(function () {
                 Loader.stop('stations');
             });
@@ -585,8 +575,56 @@ angular.module('awesomelib').service('geoloc', ['$q', function ($q) {
 }]);
 
 angular.module('awesomelib').directive('alMap', [
-    'stations', '$q', 'geoloc',
-    function (stations, $q, geoloc) {
+    'stations', '$q', 'geoloc', '$timeout',
+    function (stations, $q, geoloc, $timeout) {
+
+        var markerMe = null;
+
+        function displayMe(map, latlng) {
+            if (markerMe) markerMe.setMap(null);
+
+            markerMe = new google.maps.Marker({
+                position: latlng,
+                map: map,
+                title: "You are here!",
+                icon: 'assets/img/blue-circle-10.png'
+            });
+        }
+
+        var markers = [];
+
+        function displayStations(map, latlng) {
+            markers.forEach(function (m) {
+                m.setMap(null);
+            });
+            markers.length = 0;
+
+            stations.near(latlng).then(function (stations) {
+                stations.forEach(function (station, i) {
+                    $timeout(function () {
+                        var marker = new google.maps.Marker({
+                            map: map,
+                            position: {lat: station.lat, lng: station.lng},
+                            animation: google.maps.Animation.DROP,
+                            title: station.public_name
+                        });
+
+                        //function toggleBounce() {
+                        //
+                        //    if (marker.getAnimation() != null) {
+                        //        marker.setAnimation(null);
+                        //    } else {
+                        //        marker.setAnimation(google.maps.Animation.BOUNCE);
+                        //    }
+                        //}
+                        //
+                        //google.maps.event.addListener(marker, 'click', toggleBounce);
+
+                        markers.push(marker);
+                    }, i * 100);
+                });
+            });
+        }
 
         return {
             restrict: 'E',
@@ -598,14 +636,11 @@ angular.module('awesomelib').directive('alMap', [
             },
             link: function (scope, element, attrs) {
 
-                var map, // Map
-                    me, // LatLng
-                    markerMe, // Marker
-                    sMarks = []; // Stations markers
+                var map;
 
                 function initialize() {
                     var mapOptions = {
-                        zoom: 15
+                        zoom: 16
                     };
 
                     map = new google.maps.Map(element[0], mapOptions);
@@ -613,81 +648,41 @@ angular.module('awesomelib').directive('alMap', [
 
                 initialize();
 
-                var centerMarker = null;
                 scope.$watch('centerOn', function (center) {
                     if (!center) {
                         return;
                     }
 
-                    map.set('zoom', 16);
-
-                    if (centerMarker) {
-                        centerMarker.setMap(null);
-                    }
-
-                    if (center.lat && center.lng) {
-                        map.panTo(center);
-
-                        geoloc.addressOf(center).then(function (address) {
-                            centerMarker = new google.maps.Marker({
-                                map: map,
-                                position: center,
-                                title: address
-                            });
-                        });
-
-                    } else if (typeof center == 'string') {
-                        geoloc.coordOf(center).then(function (latlng) {
+                    ((center.lat && center.lng) ? $q.when(center) : geoloc.coordOf(center))
+                        .then(function (latlng) {
                             map.panTo(latlng);
-                            centerMarker = new google.maps.Marker({
-                                map: map,
-                                position: latlng,
-                                title: center
-                            });
+                            displayStations(map, latlng);
+                        });
+                });
+
+
+                function onPositionChange(position) {
+                    var me = {lat: position.coords.latitude, lng: position.coords.longitude};
+
+                    map && map.panTo(me);
+
+                    displayMe(map, me);
+                    displayStations(map, me);
+                }
+
+                var watchId = null;
+                scope.$watch('followMe', function (activated) {
+                    if (!activated) {
+                        watchId && navigator.geolocation.clearWatch(watchId);
+                    } else if (navigator.geolocation) {
+                        watchId = navigator.geolocation.watchPosition(onPositionChange, function (err) {
+                            console.warn('Cannot watch current position.', err);
+                        }, {
+                            maximumAge: 0,
+                            enableHighAccuracy: true
                         });
                     }
                 });
-
-                if (scope.followMe) {
-                    navigator.geolocation.watchPosition(function (position) {
-                        me = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
-
-                        if (markerMe) markerMe.setMap(null);
-
-                        markerMe = new google.maps.Marker({
-                            position: me,
-                            map: map,
-                            title: "You are here!"
-                        });
-
-                        map && map.panTo(me);
-
-                        // geocoder.addressOf(me).then(function(address) {
-                        //   console.debug && console.debug('Me detected at', address);
-                        //   return stations.near('car', address);
-                        // }).then(function(stations) {
-                        //   console.debug && console.debug(stations.length, 'stations around.');
-                        //   sMarks.forEach(function(sMark) {
-                        //     sMark.setMap(null);
-                        //   });
-                        //   stations.forEach(function(station) {
-                        //     var sMark = new google.maps.Marker({
-                        //       position: new google.maps.LatLng(station.lat, station.lng),
-                        //       map: map,
-                        //       title: station.name
-                        //     });
-                        //     sMarks.push(sMark);
-                        //   });
-                        // });
-
-                    }, function (err) {
-                        console.error(err);
-                    }, {
-                        maximumAge: 0,
-                        enableHighAccuracy: true
-                    });
-                } // end scope.followMe
-
 
             }
         };
@@ -735,22 +730,44 @@ angular.module('awesomelib').service('reservation', [
   }
 ]);
 
-angular.module('awesomelib').service('stations', ['$http', function($http) {
-  return {
-    all: function() {
-      return $http.get('/api/v2/station').then(function(resp) {
-        console.debug && console.debug('[HTTP] Stations ->', resp.data.results.length);
-        return resp.data.results;
-      });
-    },
-    get: function(stationId) {
-      return $http.get('/api/v2/station/' + encodeURIComponent(stationId)).then(function(resp) {
-        console.debug && console.debug('[HTTP] Stations ->', resp.data.results.length);
-        return resp.data.results;
-      });
-    }
-  };
-}]);
+angular.module('awesomelib').service('stations', [
+    '$http', '$q', 'geoloc',
+    function ($http, $q, geoloc) {
+        return {
+            all: function () {
+                return $http.get('/api/v2/station').then(function (resp) {
+                    console.debug && console.debug('[HTTP] Stations ->', resp.data.results.length);
+                    return resp.data.results;
+                });
+            },
+            get: function (stationId) {
+                return $http.get('/api/v2/station/' + encodeURIComponent(stationId)).then(function (resp) {
+                    console.debug && console.debug('[HTTP] Stations ->', resp.data.results.length);
+                    return resp.data.results;
+                });
+            },
+            near: function (loc) {
+                var _this = this;
+
+                return ((loc.lat && loc.lng) ? $q.when(loc) : geoloc.coordOf(loc))
+                    .then(function (latlng) {
+                        loc = latlng;
+                        return _this.all();
+                    })
+                    .then(function (stations) {
+                        stations.forEach(function (s) {
+                            s.distance = Math.round(0.01 * geoloc.distance(s, loc)) / 10;
+                        });
+
+                        stations.sort(function (s1, s2) {
+                            return s1.distance < s2.distance ? -1 : 1;
+                        });
+
+                        return stations.slice(0, 10);
+                    });
+            }
+        };
+    }]);
 
 angular.module('awesomelib').service('subscription', [
   '$http',
