@@ -1,6 +1,6 @@
 angular.module('awesomelib').directive('alMap', [
-    'stations', '$q', 'geoloc', '$timeout',
-    function (stations, $q, geoloc, $timeout) {
+    'stations', '$q', 'geoloc', '$timeout', '$location',
+    function (stations, $q, geoloc, $timeout, $location) {
 
         var markerMe = null;
 
@@ -17,35 +17,39 @@ angular.module('awesomelib').directive('alMap', [
 
         var markers = [];
 
-        function displayStations(map, latlng) {
-            markers.forEach(function (m) {
-                m.setMap(null);
-            });
-            markers.length = 0;
-
+        function displayStations(scope, map, latlng) {
             stations.near(latlng).then(function (stations) {
+                markers.forEach(function (m) {
+                    m.setMap(null);
+                });
+                markers.length = 0;
+
                 stations.forEach(function (station, i) {
-                    $timeout(function () {
-                        var marker = new google.maps.Marker({
-                            map: map,
-                            position: {lat: station.lat, lng: station.lng},
-                            animation: google.maps.Animation.DROP,
-                            title: station.public_name
+                    //$timeout(function () {
+                    var marker = new google.maps.Marker({
+                        map: map,
+                        position: {lat: station.lat, lng: station.lng},
+                        //animation: google.maps.Animation.DROP,
+                        title: station.public_name
+                    });
+
+                    //function toggleBounce() {
+                    //
+                    //    if (marker.getAnimation() != null) {
+                    //        marker.setAnimation(null);
+                    //    } else {
+                    //        marker.setAnimation(google.maps.Animation.BOUNCE);
+                    //    }
+                    //}
+                    //
+                    google.maps.event.addListener(marker, 'click', function () {
+                        scope.$apply(function () {
+                            $location.path('/station/' + station.id);
                         });
+                    });
 
-                        //function toggleBounce() {
-                        //
-                        //    if (marker.getAnimation() != null) {
-                        //        marker.setAnimation(null);
-                        //    } else {
-                        //        marker.setAnimation(google.maps.Animation.BOUNCE);
-                        //    }
-                        //}
-                        //
-                        //google.maps.event.addListener(marker, 'click', toggleBounce);
-
-                        markers.push(marker);
-                    }, i * 100);
+                    markers.push(marker);
+                    //}, i * 100);
                 });
             });
         }
@@ -80,32 +84,33 @@ angular.module('awesomelib').directive('alMap', [
                     ((center.lat && center.lng) ? $q.when(center) : geoloc.coordOf(center))
                         .then(function (latlng) {
                             map.panTo(latlng);
-                            displayStations(map, latlng);
+                            displayStations(scope, map, latlng);
                         });
                 });
 
 
                 function onPositionChange(position) {
                     var me = {lat: position.coords.latitude, lng: position.coords.longitude};
-
-                    map && map.panTo(me);
-
                     displayMe(map, me);
-                    displayStations(map, me);
+
+                    if (scope.followMe) {
+                        map && map.panTo(me);
+                        displayStations(scope, map, me);
+                    }
                 }
 
                 var watchId = null;
-                scope.$watch('followMe', function (activated) {
-                    if (!activated) {
-                        watchId && navigator.geolocation.clearWatch(watchId);
-                    } else if (navigator.geolocation) {
-                        watchId = navigator.geolocation.watchPosition(onPositionChange, function (err) {
-                            console.warn('Cannot watch current position.', err);
-                        }, {
-                            maximumAge: 0,
-                            enableHighAccuracy: true
-                        });
-                    }
+                if (navigator.geolocation) {
+                    watchId = navigator.geolocation.watchPosition(onPositionChange, function (err) {
+                        console.warn('Cannot watch current position.', err);
+                    }, {
+                        maximumAge: 0,
+                        enableHighAccuracy: true
+                    });
+                }
+
+                scope.$on('$destroy', function () {
+                    watchId && navigator.geolocation.clearWatch(watchId);
                 });
 
             }

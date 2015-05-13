@@ -185,36 +185,14 @@ angular.module('awesomelib').controller('stationController', [
     '$scope', 'stations', '$routeParams', 'reservation', '$interval',
     function ($scope, stations, $routeParams, reservation, $interval) {
 
-        var countStop = null;
-
-        function startCountDown(res) {
-            countStop && $interval.cancel(countStop);
-            var countDown = res.seconds_before_expiration;
-
-            function update() {
-                var hours = Math.floor(--countDown / 3600);
-                var minutes = Math.floor((countDown % 3600) / 60);
-                var seconds = countDown % 60;
-
-                res.countDown = (hours < 10 ? '0' : '') + hours + ':' +
-                    (minutes < 10 ? '0' : '') + minutes + ':' +
-                    (seconds < 10 ? '0' : '') + seconds;
-            }
-
-            countStop = $interval(update, 1000);
-        }
-
         function load() {
             stations.get($routeParams.stationId).then(function (stations) {
                 $scope.station = stations[0];
-
-                $scope.station.full_address = [$scope.station.address, $scope.station.city].join(', ');
 
                 reservation.pending().then(function (reservations) {
                     if (!reservations.some(function (r) {
                             if (r.station == $scope.station.id && r.status == 'PENDING') {
                                 $scope.res = r;
-                                startCountDown(r);
                                 return true;
                             }
                         })) {
@@ -425,6 +403,53 @@ angular.module('awesomelib').service('control', [
     }
 ]);
 
+angular.module('awesomelib').directive('alCountDown', ['$interval', function ($interval) {
+
+    var countStop = null;
+
+    function startCountDown(element, seconds) {
+        stopCountDown();
+
+        var countDown = seconds;
+
+        function update() {
+            var hours = Math.floor(--countDown / 3600);
+            var minutes = Math.floor((countDown % 3600) / 60);
+            var seconds = countDown % 60;
+
+            var display = (hours < 10 ? '0' : '') + hours + ':' +
+                (minutes < 10 ? '0' : '') + minutes + ':' +
+                (seconds < 10 ? '0' : '') + seconds;
+
+            element.text(display);
+        }
+
+        countStop = $interval(update, 1000);
+    }
+
+    function stopCountDown() {
+        countStop && $interval.cancel(countStop);
+    }
+
+    return {
+        restrict: 'A',
+        link: function (scope, element, attrs) {
+            scope.$watch(attrs.alCountDown, function (seconds) {
+                if (seconds) {
+                    startCountDown(element, seconds);
+                } else {
+                    stopCountDown();
+                }
+            });
+
+            scope.$on('$destroy', function () {
+                stopCountDown();
+            });
+        }
+    }
+
+}]);
+
 angular.module('awesomelib').filter('capitalize', [function() {
   return function(string) {
     return string && typeof string == 'string' && string[0].toUpperCase() + string.substr(1);
@@ -575,8 +600,8 @@ angular.module('awesomelib').service('geoloc', ['$q', function ($q) {
 }]);
 
 angular.module('awesomelib').directive('alMap', [
-    'stations', '$q', 'geoloc', '$timeout',
-    function (stations, $q, geoloc, $timeout) {
+    'stations', '$q', 'geoloc', '$timeout', '$location',
+    function (stations, $q, geoloc, $timeout, $location) {
 
         var markerMe = null;
 
@@ -593,35 +618,39 @@ angular.module('awesomelib').directive('alMap', [
 
         var markers = [];
 
-        function displayStations(map, latlng) {
-            markers.forEach(function (m) {
-                m.setMap(null);
-            });
-            markers.length = 0;
-
+        function displayStations(scope, map, latlng) {
             stations.near(latlng).then(function (stations) {
+                markers.forEach(function (m) {
+                    m.setMap(null);
+                });
+                markers.length = 0;
+
                 stations.forEach(function (station, i) {
-                    $timeout(function () {
-                        var marker = new google.maps.Marker({
-                            map: map,
-                            position: {lat: station.lat, lng: station.lng},
-                            animation: google.maps.Animation.DROP,
-                            title: station.public_name
+                    //$timeout(function () {
+                    var marker = new google.maps.Marker({
+                        map: map,
+                        position: {lat: station.lat, lng: station.lng},
+                        //animation: google.maps.Animation.DROP,
+                        title: station.public_name
+                    });
+
+                    //function toggleBounce() {
+                    //
+                    //    if (marker.getAnimation() != null) {
+                    //        marker.setAnimation(null);
+                    //    } else {
+                    //        marker.setAnimation(google.maps.Animation.BOUNCE);
+                    //    }
+                    //}
+                    //
+                    google.maps.event.addListener(marker, 'click', function () {
+                        scope.$apply(function () {
+                            $location.path('/station/' + station.id);
                         });
+                    });
 
-                        //function toggleBounce() {
-                        //
-                        //    if (marker.getAnimation() != null) {
-                        //        marker.setAnimation(null);
-                        //    } else {
-                        //        marker.setAnimation(google.maps.Animation.BOUNCE);
-                        //    }
-                        //}
-                        //
-                        //google.maps.event.addListener(marker, 'click', toggleBounce);
-
-                        markers.push(marker);
-                    }, i * 100);
+                    markers.push(marker);
+                    //}, i * 100);
                 });
             });
         }
@@ -656,32 +685,33 @@ angular.module('awesomelib').directive('alMap', [
                     ((center.lat && center.lng) ? $q.when(center) : geoloc.coordOf(center))
                         .then(function (latlng) {
                             map.panTo(latlng);
-                            displayStations(map, latlng);
+                            displayStations(scope, map, latlng);
                         });
                 });
 
 
                 function onPositionChange(position) {
                     var me = {lat: position.coords.latitude, lng: position.coords.longitude};
-
-                    map && map.panTo(me);
-
                     displayMe(map, me);
-                    displayStations(map, me);
+
+                    if (scope.followMe) {
+                        map && map.panTo(me);
+                        displayStations(scope, map, me);
+                    }
                 }
 
                 var watchId = null;
-                scope.$watch('followMe', function (activated) {
-                    if (!activated) {
-                        watchId && navigator.geolocation.clearWatch(watchId);
-                    } else if (navigator.geolocation) {
-                        watchId = navigator.geolocation.watchPosition(onPositionChange, function (err) {
-                            console.warn('Cannot watch current position.', err);
-                        }, {
-                            maximumAge: 0,
-                            enableHighAccuracy: true
-                        });
-                    }
+                if (navigator.geolocation) {
+                    watchId = navigator.geolocation.watchPosition(onPositionChange, function (err) {
+                        console.warn('Cannot watch current position.', err);
+                    }, {
+                        maximumAge: 0,
+                        enableHighAccuracy: true
+                    });
+                }
+
+                scope.$on('$destroy', function () {
+                    watchId && navigator.geolocation.clearWatch(watchId);
                 });
 
             }
