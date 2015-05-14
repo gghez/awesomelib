@@ -1,19 +1,25 @@
-<div class="al-station panel panel-default">
+<div class="al-station-card panel panel-default">
     <div class="panel-body">
-        <span class="btn btn-danger btn-xs pull-left al-station-cancel" ng-show="res" ng-click="cancel()">
-            <span class="glyphicon glyphicon-thumbs-down"></span>
-            <span class="glyphicon glyphicon-time"></span>
-            <span al-count-down="res.seconds_before_expiration"></span>
-        </span>
+
         <a ng-href="#/station/{{station.id}}" class="al-station-name pull-left">{{station.public_name}}</a>
 
         <div class="pull-right">
-            <button class="btn btn-primary al-station-btn" ng-class="{'disabled': !station.cars}"
-                    title="Click to reserve" ng-click="reserve('car', station.id)">Cars
+            <button class="btn btn-danger al-station-btn" ng-show="res" ng-click="cancel()">
+                <span class="glyphicon glyphicon-thumbs-down"></span>
+                <span class="glyphicon glyphicon-time"></span>
+                <span al-count-down="res.seconds_before_expiration"></span>
+            </button>
+
+            <button class="btn btn-primary al-station-btn" ng-hide="noCar || res" ng-class="{'disabled': !station.cars}"
+                    title="Click to reserve" ng-click="reserve('car', station.id)">
+                <span class="glyphicon glyphicon-thumbs-up" ng-show="noPark"></span>
+                Cars
                 <span class="badge">{{station.cars}}</span>
             </button>
-            <button class="btn btn-primary al-station-btn" ng-class="{'disabled': !station.slots}"
-                    title="Click to reserve" ng-click="reserve('park', station.id)">Parks
+            <button class="btn btn-primary al-station-btn" ng-hide="noPark || res" ng-class="{'disabled': !station.slots}"
+                    title="Click to reserve" ng-click="reserve('park', station.id)">
+                <span class="glyphicon glyphicon-thumbs-up" ng-show="noCar"></span>
+                Parks
                 <span class="badge">{{station.slots}}</span>
             </button>
         </div>

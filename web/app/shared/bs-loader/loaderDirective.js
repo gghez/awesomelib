@@ -9,18 +9,18 @@ angular.module('bsLoader').directive('bsLoader', ['Loader', '$timeout', function
         restrict: 'E',
         scope: {},
         link: function (scope) {
-            var timer = null;
+            //var timer = null;
 
             function onLoadingStateChanged(loading, text) {
                 scope.$evalAsync(function () {
                     if (loading) {
-                        timer && $timeout.cancel(timer);
+                        //timer && $timeout.cancel(timer);
                         scope.loading = loading;
                         scope.loaderText = text || DEFAULT_LOADER_TEXT;
                     } else {
-                        timer = $timeout(function () {
-                            scope.loading = false;
-                        }, 500);
+                        //timer = $timeout(function () {
+                        scope.loading = false;
+                        //}, 500);
                     }
                 });
             }

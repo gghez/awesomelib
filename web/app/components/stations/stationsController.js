@@ -6,9 +6,6 @@ angular.module('awesomelib').controller('stationsController', [
             Loader.start('stations');
 
             geoloc.me().then(function (me) { // try current GPS location
-                me.lat = me.coords.latitude;
-                me.lng = me.coords.longitude;
-
                 return geoloc.addressOf(me).then(function (address) {
                     $scope.currentAddress = address;
                     return me;

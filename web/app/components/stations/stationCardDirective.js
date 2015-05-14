@@ -4,7 +4,9 @@ angular.module('awesomelib').directive('alStationCard', [function () {
         replace: true,
         templateUrl: 'app/components/stations/stationCard.html',
         scope: {
-            station: '='
+            station: '=',
+            noCar: '=',
+            noPark: '='
         },
         controller: ['$scope', 'reservation', function ($scope, reservation) {
             function update() {

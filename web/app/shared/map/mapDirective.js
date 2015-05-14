@@ -1,6 +1,6 @@
 angular.module('awesomelib').directive('alMap', [
-    'stations', '$q', 'geoloc', '$timeout', '$location',
-    function (stations, $q, geoloc, $timeout, $location) {
+    'stations', '$q', 'geoloc', '$location',
+    function (stations, $q, geoloc, $location) {
 
         var markerMe = null;
 
@@ -15,48 +15,6 @@ angular.module('awesomelib').directive('alMap', [
             });
         }
 
-        var markers = [];
-
-        function displayStations(scope, map, latlng) {
-            stations.near(latlng, function (s) {
-                return s.cars > 0;
-            }).then(function (stations) {
-                markers.forEach(function (m) {
-                    m.setMap(null);
-                });
-                markers.length = 0;
-
-                stations.forEach(function (station, i) {
-                    //$timeout(function () {
-                    var marker = new google.maps.Marker({
-                        map: map,
-                        position: {lat: station.lat, lng: station.lng},
-                        //animation: google.maps.Animation.DROP,
-                        title: station.public_name,
-                        icon: 'assets/img/car-available1.png'
-                    });
-
-                    //function toggleBounce() {
-                    //
-                    //    if (marker.getAnimation() != null) {
-                    //        marker.setAnimation(null);
-                    //    } else {
-                    //        marker.setAnimation(google.maps.Animation.BOUNCE);
-                    //    }
-                    //}
-                    //
-                    google.maps.event.addListener(marker, 'click', function () {
-                        scope.$apply(function () {
-                            $location.path('/station/' + station.id);
-                        });
-                    });
-
-                    markers.push(marker);
-                    //}, i * 100);
-                });
-            });
-        }
-
         return {
             restrict: 'E',
             template: '<div id="map-canvas" class="al-map"></div>',
@@ -64,26 +22,54 @@ angular.module('awesomelib').directive('alMap', [
             scope: {
                 centerOn: '=',
                 followMe: '=',
-                zoom: '='
+                zoom: '=',
+                stations: '=',
+                meTo: '='
             },
             link: function (scope, element, attrs) {
 
-                var map;
-
-                function initialize() {
-                    var mapOptions = {
-                        zoom: 16
-                    };
-
-                    map = new google.maps.Map(element[0], mapOptions);
-                }
-
-                initialize();
+                var map = new google.maps.Map(element[0], {
+                    zoom: 16,
+                    disableDefaultUI: true
+                });
+                var directionsRenderer = new google.maps.DirectionsRenderer();
+                var directionsService = new google.maps.DirectionsService();
 
                 scope.$watch('zoom', function (zoom) {
                     if (zoom) {
                         map.set('zoom', zoom);
                     }
+                });
+
+                var markers = [];
+
+                scope.$watch('stations', function (stations) {
+                    markers.forEach(function (m) {
+                        m.setMap(null);
+                    });
+                    markers.length = 0;
+
+                    if (!stations) {
+                        return;
+                    }
+
+                    stations.forEach(function (station) {
+                        var marker = new google.maps.Marker({
+                            map: map,
+                            position: {lat: station.lat, lng: station.lng},
+                            title: station.public_name,
+                            icon: 'assets/img/car_orb.png'
+                        });
+
+                        google.maps.event.addListener(marker, 'click', function () {
+                            scope.$apply(function () {
+                                $location.path('/station/' + station.id);
+                            });
+                        });
+
+                        markers.push(marker);
+                    });
+
                 });
 
                 scope.$watch('centerOn', function (center) {
@@ -94,30 +80,41 @@ angular.module('awesomelib').directive('alMap', [
                     ((center.lat && center.lng) ? $q.when(center) : geoloc.coordOf(center))
                         .then(function (latlng) {
                             map.panTo(latlng);
-                            displayStations(scope, map, latlng);
                         });
                 });
 
+                scope.$watch('meTo', function (target) {
+                    directionsRenderer.setMap(null);
+                    if (!target) {
+                        return;
+                    }
 
-                function onPositionChange(position) {
-                    var me = {lat: position.coords.latitude, lng: position.coords.longitude};
+                    geoloc.me().then(function (me) {
+                        var start = new google.maps.LatLng(me.lat, me.lng);
+                        var end = new google.maps.LatLng(target.lat, target.lng);
+                        var request = {
+                            origin: start,
+                            destination: end,
+                            travelMode: google.maps.TravelMode.WALKING
+                        };
+                        directionsService.route(request, function (response, status) {
+                            if (status == google.maps.DirectionsStatus.OK) {
+                                directionsRenderer.setMap(map);
+                                directionsRenderer.setDirections(response);
+                                map.set('zoom', 17);
+                            }
+                        });
+                    });
+
+                });
+
+                var watchId = geoloc.watchMe(function (me) {
                     displayMe(map, me);
 
                     if (scope.followMe) {
                         map && map.panTo(me);
-                        displayStations(scope, map, me);
                     }
-                }
-
-                var watchId = null;
-                if (navigator.geolocation) {
-                    watchId = navigator.geolocation.watchPosition(onPositionChange, function (err) {
-                        console.warn('Cannot watch current position.', err);
-                    }, {
-                        maximumAge: 0,
-                        enableHighAccuracy: true
-                    });
-                }
+                });
 
                 scope.$on('$destroy', function () {
                     watchId && navigator.geolocation.clearWatch(watchId);

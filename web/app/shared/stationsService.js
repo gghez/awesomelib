@@ -26,7 +26,9 @@ angular.module('awesomelib').service('stations', [
                         return _this.all();
                     })
                     .then(function (stations) {
-                        stations.filter(filter).forEach(function (s) {
+                        stations = stations.filter(filter);
+
+                        stations.forEach(function (s) {
                             s.distance = Math.round(0.01 * geoloc.distance(s, loc)) / 10;
                         });
 
@@ -34,7 +36,10 @@ angular.module('awesomelib').service('stations', [
                             return s1.distance < s2.distance ? -1 : 1;
                         });
 
-                        return stations.slice(0, 10);
+                        var nearest = stations.slice(0, 10);
+                        console.debug && console.debug('Near', loc, nearest);
+
+                        return nearest;
                     });
             },
             favourite: function () {

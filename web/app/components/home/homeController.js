@@ -1,9 +1,23 @@
 angular.module('awesomelib').controller('homeController', [
-    '$scope', 'rentals', '$window', '$location', 'geoloc', 'info',
-    function ($scope, rentals, $window, $location, geoloc, info) {
+    '$scope', 'rentals', '$window', '$location', 'geoloc', 'info', 'stations', 'Loader', '$q',
+    function ($scope, rentals, $window, $location, geoloc, info, stations, Loader, $q) {
+
+        function nearest(type) {
+            return geoloc.me().then(function (me) {
+                $scope.initialPosition = me;
+                return stations.near(me, function (s) {
+                    return (type == 'car' ? s.cars : s.parks) > 0;
+                });
+            }).then(function (stations) {
+                $scope.stations = stations;
+                $scope.nearest = stations[0];
+            });
+        }
 
         function load() {
-            rentals.get().then(function (history) {
+            Loader.start('home');
+
+            var rentalsLoad = rentals.get().then(function (history) {
                 var now = new Date();
                 var prev = new Date(now);
                 prev.setDate(0);
@@ -26,20 +40,16 @@ angular.module('awesomelib').controller('homeController', [
                 $scope.usage.diff = $scope.usage.cur - $scope.usage.prev;
             });
 
-            info.get().then(function (ci) {
-                return geoloc.coordOf([ci.address.street, ci.address.zipcode, ci.address.city].join(', '));
-            }).then(function (latlng) {
-                $scope.initialPosition = latlng;
+
+            var nearestLoad = nearest('car');
+
+            $q.all([rentalsLoad, nearestLoad]).finally(function () {
+                Loader.stop('home');
             });
         }
 
         load();
 
-        $scope.reserve = function (type, stationId) {
-            car.reserve(type, stationId).then(function () {
-                $location.path('/pending/' + type);
-            });
-        };
 
     }
 ]);

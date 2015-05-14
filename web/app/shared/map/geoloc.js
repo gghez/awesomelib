@@ -69,7 +69,9 @@ angular.module('awesomelib').service('geoloc', ['$q', function ($q) {
                 defer.reject('No geolocation API.');
             } else {
                 navigator.geolocation.getCurrentPosition(function (pos) {
-                    defer.resolve(pos);
+                    var me = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+                    console.debug && console.debug('Me', me);
+                    defer.resolve(me);
                 }, function (err) {
                     defer.reject(err);
                 }, {
@@ -82,12 +84,20 @@ angular.module('awesomelib').service('geoloc', ['$q', function ($q) {
         },
 
         watchMe: function (callback) {
+            if (!callback) {
+                console.error('No callback defined for geolocation watching.');
+                return;
+            }
+
             if (!navigator.geolocation) {
                 console.error('No geolocation API.');
                 return;
             }
 
-            navigator.geolocation.watchPosition(callback, function (err) {
+            return navigator.geolocation.watchPosition(function (pos) {
+                var me = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+                callback(me);
+            }, function (err) {
                 console.error('geoloc watch', err);
             }, {
                 maximumAge: 0,

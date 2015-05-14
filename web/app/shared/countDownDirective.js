@@ -19,6 +19,8 @@ angular.module('awesomelib').directive('alCountDown', ['$interval', function ($i
             element.text(display);
         }
 
+        update();
+
         countStop = $interval(update, 1000);
     }
 

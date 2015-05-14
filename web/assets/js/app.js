@@ -47,11 +47,25 @@ angular.module('awesomelib').config(['$routeProvider', function ($routeProvider)
 }]);
 
 angular.module('awesomelib').controller('homeController', [
-    '$scope', 'rentals', '$window', '$location', 'geoloc', 'info',
-    function ($scope, rentals, $window, $location, geoloc, info) {
+    '$scope', 'rentals', '$window', '$location', 'geoloc', 'info', 'stations', 'Loader', '$q',
+    function ($scope, rentals, $window, $location, geoloc, info, stations, Loader, $q) {
+
+        function nearest(type) {
+            return geoloc.me().then(function (me) {
+                $scope.initialPosition = me;
+                return stations.near(me, function (s) {
+                    return (type == 'car' ? s.cars : s.parks) > 0;
+                });
+            }).then(function (stations) {
+                $scope.stations = stations;
+                $scope.nearest = stations[0];
+            });
+        }
 
         function load() {
-            rentals.get().then(function (history) {
+            Loader.start('home');
+
+            var rentalsLoad = rentals.get().then(function (history) {
                 var now = new Date();
                 var prev = new Date(now);
                 prev.setDate(0);
@@ -74,20 +88,16 @@ angular.module('awesomelib').controller('homeController', [
                 $scope.usage.diff = $scope.usage.cur - $scope.usage.prev;
             });
 
-            info.get().then(function (ci) {
-                return geoloc.coordOf([ci.address.street, ci.address.zipcode, ci.address.city].join(', '));
-            }).then(function (latlng) {
-                $scope.initialPosition = latlng;
+
+            var nearestLoad = nearest('car');
+
+            $q.all([rentalsLoad, nearestLoad]).finally(function () {
+                Loader.stop('home');
             });
         }
 
         load();
 
-        $scope.reserve = function (type, stationId) {
-            car.reserve(type, stationId).then(function () {
-                $location.path('/pending/' + type);
-            });
-        };
 
     }
 ]);
@@ -161,7 +171,9 @@ angular.module('awesomelib').directive('alStationCard', [function () {
         replace: true,
         templateUrl: 'app/components/stations/stationCard.html',
         scope: {
-            station: '='
+            station: '=',
+            noCar: '=',
+            noPark: '='
         },
         controller: ['$scope', 'reservation', function ($scope, reservation) {
             function update() {
@@ -238,9 +250,6 @@ angular.module('awesomelib').controller('stationsController', [
             Loader.start('stations');
 
             geoloc.me().then(function (me) { // try current GPS location
-                me.lat = me.coords.latitude;
-                me.lng = me.coords.longitude;
-
                 return geoloc.addressOf(me).then(function (address) {
                     $scope.currentAddress = address;
                     return me;
@@ -285,18 +294,18 @@ angular.module('bsLoader').directive('bsLoader', ['Loader', '$timeout', function
         restrict: 'E',
         scope: {},
         link: function (scope) {
-            var timer = null;
+            //var timer = null;
 
             function onLoadingStateChanged(loading, text) {
                 scope.$evalAsync(function () {
                     if (loading) {
-                        timer && $timeout.cancel(timer);
+                        //timer && $timeout.cancel(timer);
                         scope.loading = loading;
                         scope.loaderText = text || DEFAULT_LOADER_TEXT;
                     } else {
-                        timer = $timeout(function () {
-                            scope.loading = false;
-                        }, 500);
+                        //timer = $timeout(function () {
+                        scope.loading = false;
+                        //}, 500);
                     }
                 });
             }
@@ -438,6 +447,8 @@ angular.module('awesomelib').directive('alCountDown', ['$interval', function ($i
 
             element.text(display);
         }
+
+        update();
 
         countStop = $interval(update, 1000);
     }
@@ -586,7 +597,9 @@ angular.module('awesomelib').service('geoloc', ['$q', function ($q) {
                 defer.reject('No geolocation API.');
             } else {
                 navigator.geolocation.getCurrentPosition(function (pos) {
-                    defer.resolve(pos);
+                    var me = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+                    console.debug && console.debug('Me', me);
+                    defer.resolve(me);
                 }, function (err) {
                     defer.reject(err);
                 }, {
@@ -599,12 +612,20 @@ angular.module('awesomelib').service('geoloc', ['$q', function ($q) {
         },
 
         watchMe: function (callback) {
+            if (!callback) {
+                console.error('No callback defined for geolocation watching.');
+                return;
+            }
+
             if (!navigator.geolocation) {
                 console.error('No geolocation API.');
                 return;
             }
 
-            navigator.geolocation.watchPosition(callback, function (err) {
+            return navigator.geolocation.watchPosition(function (pos) {
+                var me = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+                callback(me);
+            }, function (err) {
                 console.error('geoloc watch', err);
             }, {
                 maximumAge: 0,
@@ -615,8 +636,8 @@ angular.module('awesomelib').service('geoloc', ['$q', function ($q) {
 }]);
 
 angular.module('awesomelib').directive('alMap', [
-    'stations', '$q', 'geoloc', '$timeout', '$location',
-    function (stations, $q, geoloc, $timeout, $location) {
+    'stations', '$q', 'geoloc', '$location',
+    function (stations, $q, geoloc, $location) {
 
         var markerMe = null;
 
@@ -631,48 +652,6 @@ angular.module('awesomelib').directive('alMap', [
             });
         }
 
-        var markers = [];
-
-        function displayStations(scope, map, latlng) {
-            stations.near(latlng, function (s) {
-                return s.cars > 0;
-            }).then(function (stations) {
-                markers.forEach(function (m) {
-                    m.setMap(null);
-                });
-                markers.length = 0;
-
-                stations.forEach(function (station, i) {
-                    //$timeout(function () {
-                    var marker = new google.maps.Marker({
-                        map: map,
-                        position: {lat: station.lat, lng: station.lng},
-                        //animation: google.maps.Animation.DROP,
-                        title: station.public_name,
-                        icon: 'assets/img/car-available1.png'
-                    });
-
-                    //function toggleBounce() {
-                    //
-                    //    if (marker.getAnimation() != null) {
-                    //        marker.setAnimation(null);
-                    //    } else {
-                    //        marker.setAnimation(google.maps.Animation.BOUNCE);
-                    //    }
-                    //}
-                    //
-                    google.maps.event.addListener(marker, 'click', function () {
-                        scope.$apply(function () {
-                            $location.path('/station/' + station.id);
-                        });
-                    });
-
-                    markers.push(marker);
-                    //}, i * 100);
-                });
-            });
-        }
-
         return {
             restrict: 'E',
             template: '<div id="map-canvas" class="al-map"></div>',
@@ -680,26 +659,54 @@ angular.module('awesomelib').directive('alMap', [
             scope: {
                 centerOn: '=',
                 followMe: '=',
-                zoom: '='
+                zoom: '=',
+                stations: '=',
+                meTo: '='
             },
             link: function (scope, element, attrs) {
 
-                var map;
-
-                function initialize() {
-                    var mapOptions = {
-                        zoom: 16
-                    };
-
-                    map = new google.maps.Map(element[0], mapOptions);
-                }
-
-                initialize();
+                var map = new google.maps.Map(element[0], {
+                    zoom: 16,
+                    disableDefaultUI: true
+                });
+                var directionsRenderer = new google.maps.DirectionsRenderer();
+                var directionsService = new google.maps.DirectionsService();
 
                 scope.$watch('zoom', function (zoom) {
                     if (zoom) {
                         map.set('zoom', zoom);
                     }
+                });
+
+                var markers = [];
+
+                scope.$watch('stations', function (stations) {
+                    markers.forEach(function (m) {
+                        m.setMap(null);
+                    });
+                    markers.length = 0;
+
+                    if (!stations) {
+                        return;
+                    }
+
+                    stations.forEach(function (station) {
+                        var marker = new google.maps.Marker({
+                            map: map,
+                            position: {lat: station.lat, lng: station.lng},
+                            title: station.public_name,
+                            icon: 'assets/img/car_orb.png'
+                        });
+
+                        google.maps.event.addListener(marker, 'click', function () {
+                            scope.$apply(function () {
+                                $location.path('/station/' + station.id);
+                            });
+                        });
+
+                        markers.push(marker);
+                    });
+
                 });
 
                 scope.$watch('centerOn', function (center) {
@@ -710,30 +717,41 @@ angular.module('awesomelib').directive('alMap', [
                     ((center.lat && center.lng) ? $q.when(center) : geoloc.coordOf(center))
                         .then(function (latlng) {
                             map.panTo(latlng);
-                            displayStations(scope, map, latlng);
                         });
                 });
 
+                scope.$watch('meTo', function (target) {
+                    directionsRenderer.setMap(null);
+                    if (!target) {
+                        return;
+                    }
 
-                function onPositionChange(position) {
-                    var me = {lat: position.coords.latitude, lng: position.coords.longitude};
+                    geoloc.me().then(function (me) {
+                        var start = new google.maps.LatLng(me.lat, me.lng);
+                        var end = new google.maps.LatLng(target.lat, target.lng);
+                        var request = {
+                            origin: start,
+                            destination: end,
+                            travelMode: google.maps.TravelMode.WALKING
+                        };
+                        directionsService.route(request, function (response, status) {
+                            if (status == google.maps.DirectionsStatus.OK) {
+                                directionsRenderer.setMap(map);
+                                directionsRenderer.setDirections(response);
+                                map.set('zoom', 17);
+                            }
+                        });
+                    });
+
+                });
+
+                var watchId = geoloc.watchMe(function (me) {
                     displayMe(map, me);
 
                     if (scope.followMe) {
                         map && map.panTo(me);
-                        displayStations(scope, map, me);
                     }
-                }
-
-                var watchId = null;
-                if (navigator.geolocation) {
-                    watchId = navigator.geolocation.watchPosition(onPositionChange, function (err) {
-                        console.warn('Cannot watch current position.', err);
-                    }, {
-                        maximumAge: 0,
-                        enableHighAccuracy: true
-                    });
-                }
+                });
 
                 scope.$on('$destroy', function () {
                     watchId && navigator.geolocation.clearWatch(watchId);
@@ -814,7 +832,9 @@ angular.module('awesomelib').service('stations', [
                         return _this.all();
                     })
                     .then(function (stations) {
-                        stations.filter(filter).forEach(function (s) {
+                        stations = stations.filter(filter);
+
+                        stations.forEach(function (s) {
                             s.distance = Math.round(0.01 * geoloc.distance(s, loc)) / 10;
                         });
 
@@ -822,7 +842,10 @@ angular.module('awesomelib').service('stations', [
                             return s1.distance < s2.distance ? -1 : 1;
                         });
 
-                        return stations.slice(0, 10);
+                        var nearest = stations.slice(0, 10);
+                        console.debug && console.debug('Near', loc, nearest);
+
+                        return nearest;
                     });
             },
             favourite: function () {
