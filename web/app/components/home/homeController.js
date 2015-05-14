@@ -2,15 +2,17 @@ angular.module('awesomelib').controller('homeController', [
     '$scope', 'rentals', '$window', '$location', 'geoloc', 'info', 'stations', 'Loader', '$q',
     function ($scope, rentals, $window, $location, geoloc, info, stations, Loader, $q) {
 
+        var me=null;
+
         function nearest(type) {
-            return geoloc.me().then(function (me) {
-                $scope.initialPosition = me;
-                return stations.near(me, function (s) {
+            return geoloc.me().then(function (_me) {
+                me = _me;
+                return stations.near(_me, function (s) {
                     return (type == 'car' ? s.cars : s.parks) > 0;
                 });
-            }).then(function (stations) {
-                $scope.stations = stations;
-                $scope.nearest = stations[0];
+            }).then(function (_stations) {
+                $scope.stations = _stations;
+                $scope.nearest = _stations[0];
             });
         }
 
@@ -36,8 +38,6 @@ angular.module('awesomelib').controller('homeController', [
                         return sum + rental.net_amount;
                     }, 0) / 100
                 };
-
-                $scope.usage.diff = $scope.usage.cur - $scope.usage.prev;
             });
 
 
@@ -45,6 +45,7 @@ angular.module('awesomelib').controller('homeController', [
 
             $q.all([rentalsLoad, nearestLoad]).finally(function () {
                 Loader.stop('home');
+                $scope.initialPosition = me;
             });
         }
 

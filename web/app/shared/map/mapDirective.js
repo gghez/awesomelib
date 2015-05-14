@@ -17,7 +17,7 @@ angular.module('awesomelib').directive('alMap', [
 
         return {
             restrict: 'E',
-            template: '<div id="map-canvas" class="al-map"></div>',
+            template: '<div class="al-map"></div>',
             replace: true,
             scope: {
                 centerOn: '=',
@@ -73,6 +73,8 @@ angular.module('awesomelib').directive('alMap', [
                 });
 
                 scope.$watch('centerOn', function (center) {
+                    google.maps.event.trigger(map, 'resize');
+
                     if (!center) {
                         return;
                     }

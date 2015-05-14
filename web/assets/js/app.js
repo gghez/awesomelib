@@ -50,15 +50,17 @@ angular.module('awesomelib').controller('homeController', [
     '$scope', 'rentals', '$window', '$location', 'geoloc', 'info', 'stations', 'Loader', '$q',
     function ($scope, rentals, $window, $location, geoloc, info, stations, Loader, $q) {
 
+        var me=null;
+
         function nearest(type) {
-            return geoloc.me().then(function (me) {
-                $scope.initialPosition = me;
-                return stations.near(me, function (s) {
+            return geoloc.me().then(function (_me) {
+                me = _me;
+                return stations.near(_me, function (s) {
                     return (type == 'car' ? s.cars : s.parks) > 0;
                 });
-            }).then(function (stations) {
-                $scope.stations = stations;
-                $scope.nearest = stations[0];
+            }).then(function (_stations) {
+                $scope.stations = _stations;
+                $scope.nearest = _stations[0];
             });
         }
 
@@ -84,8 +86,6 @@ angular.module('awesomelib').controller('homeController', [
                         return sum + rental.net_amount;
                     }, 0) / 100
                 };
-
-                $scope.usage.diff = $scope.usage.cur - $scope.usage.prev;
             });
 
 
@@ -93,6 +93,7 @@ angular.module('awesomelib').controller('homeController', [
 
             $q.all([rentalsLoad, nearestLoad]).finally(function () {
                 Loader.stop('home');
+                $scope.initialPosition = me;
             });
         }
 
@@ -214,6 +215,7 @@ angular.module('awesomelib').controller('stationController', [
 
         function load() {
             stations.get($routeParams.stationId).then(function (stations) {
+                $scope.stations = stations;
                 $scope.station = stations[0];
 
                 reservation.pending().then(function (reservations) {
@@ -246,6 +248,8 @@ angular.module('awesomelib').controller('stationsController', [
     '$scope', 'stations', '$location', 'reservation', 'geoloc', 'Loader', 'info', '$routeParams',
     function ($scope, stations, $location, reservation, geoloc, Loader, info) {
 
+        $scope.favourite = /favourite/.test($location.path());
+
         function load() {
             Loader.start('stations');
 
@@ -262,11 +266,13 @@ angular.module('awesomelib').controller('stationsController', [
                     return geoloc.coordOf($scope.currentAddress);
                 });
             }).then(function (pos) { // Select nearest stations from reference position
-                return /favourite/.test($location.path()) ? stations.favourite().then(function (_stations) {
+                return $scope.favourite ? stations.favourite().then(function (_stations) {
                     return _stations.map(function (s) {
                         return (s.distance = Math.round(0.01 * geoloc.distance(s, pos)) / 10) && s;
                     });
-                }) : stations.near(pos);
+                }) : stations.near(pos, function (s) {
+                    return s.cars > 0;
+                });
             }).then(function (_stations) {
                 $scope.stations = _stations;
             }).finally(function () {
@@ -275,7 +281,6 @@ angular.module('awesomelib').controller('stationsController', [
         }
 
         load();
-
 
 
     }
@@ -624,6 +629,7 @@ angular.module('awesomelib').service('geoloc', ['$q', function ($q) {
 
             return navigator.geolocation.watchPosition(function (pos) {
                 var me = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+                console.debug && console.debug('Me [update]', me);
                 callback(me);
             }, function (err) {
                 console.error('geoloc watch', err);
@@ -654,7 +660,7 @@ angular.module('awesomelib').directive('alMap', [
 
         return {
             restrict: 'E',
-            template: '<div id="map-canvas" class="al-map"></div>',
+            template: '<div class="al-map"></div>',
             replace: true,
             scope: {
                 centerOn: '=',
@@ -710,6 +716,8 @@ angular.module('awesomelib').directive('alMap', [
                 });
 
                 scope.$watch('centerOn', function (center) {
+                    google.maps.event.trigger(map, 'resize');
+
                     if (!center) {
                         return;
                     }

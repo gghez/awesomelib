@@ -1,27 +1,23 @@
-<div bs-loader-hide>
-    <al-station-card station="nearest" no-park="true"></al-station-card>
+<al-station-card station="nearest" no-park="true"></al-station-card>
 
-    <al-map follow-me="true" me-to="nearest" center-on="initialPosition" zoom="15"></al-map>
+<al-map follow-me="true" me-to="nearest" center-on="initialPosition" zoom="15"></al-map>
 
-    <div class="panel panel-default">
-        <div class="panel-body">
-            <div class="row">
-                <div class="al-usage-block col-xs-6">
-                    <span class="al-usage-label">Prev month</span>
-                    <span class="al-usage-amount">{{usage.prev}} €</span>
-                </div>
+<div class="panel panel-default">
+    <div class="panel-body">
+        <div class="row">
+            <div class="al-usage-block col-xs-6">
+                <span class="al-usage-label">Prev month</span>
+                <span class="al-usage-amount">{{usage.prev}} €</span>
+            </div>
 
-                <div class="al-usage-block col-xs-6">
-                    <span class="al-usage-label">Current month</span>
-                    <span class="al-usage-amount">{{usage.cur}} €</span>
-            <span class="al-usage-diff" ng-class="{
+            <div class="al-usage-block col-xs-6">
+                <span class="al-usage-label">Current month</span>
+                    <span class="al-usage-amount" ng-class="{
                 'text-success':usage.cur - usage.prev < 0,
                 'text-danger':usage.cur - usage.prev > 0
-              }">{{ usage.diff }} €</span>
-                </div>
+              }">{{usage.cur}} €</span>
             </div>
         </div>
-
     </div>
 
 </div>

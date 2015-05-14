@@ -4,6 +4,7 @@ angular.module('awesomelib').controller('stationController', [
 
         function load() {
             stations.get($routeParams.stationId).then(function (stations) {
+                $scope.stations = stations;
                 $scope.station = stations[0];
 
                 reservation.pending().then(function (reservations) {

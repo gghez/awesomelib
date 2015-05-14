@@ -96,6 +96,7 @@ angular.module('awesomelib').service('geoloc', ['$q', function ($q) {
 
             return navigator.geolocation.watchPosition(function (pos) {
                 var me = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+                console.debug && console.debug('Me [update]', me);
                 callback(me);
             }, function (err) {
                 console.error('geoloc watch', err);

@@ -2,6 +2,8 @@ angular.module('awesomelib').controller('stationsController', [
     '$scope', 'stations', '$location', 'reservation', 'geoloc', 'Loader', 'info', '$routeParams',
     function ($scope, stations, $location, reservation, geoloc, Loader, info) {
 
+        $scope.favourite = /favourite/.test($location.path());
+
         function load() {
             Loader.start('stations');
 
@@ -18,11 +20,13 @@ angular.module('awesomelib').controller('stationsController', [
                     return geoloc.coordOf($scope.currentAddress);
                 });
             }).then(function (pos) { // Select nearest stations from reference position
-                return /favourite/.test($location.path()) ? stations.favourite().then(function (_stations) {
+                return $scope.favourite ? stations.favourite().then(function (_stations) {
                     return _stations.map(function (s) {
                         return (s.distance = Math.round(0.01 * geoloc.distance(s, pos)) / 10) && s;
                     });
-                }) : stations.near(pos);
+                }) : stations.near(pos, function (s) {
+                    return s.cars > 0;
+                });
             }).then(function (_stations) {
                 $scope.stations = _stations;
             }).finally(function () {
@@ -31,7 +35,6 @@ angular.module('awesomelib').controller('stationsController', [
         }
 
         load();
-
 
 
     }
