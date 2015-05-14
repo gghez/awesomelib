@@ -2,7 +2,7 @@ angular.module('awesomelib').controller('homeController', [
     '$scope', 'rentals', '$window', '$location', 'geoloc', 'info', 'stations', 'Loader', '$q',
     function ($scope, rentals, $window, $location, geoloc, info, stations, Loader, $q) {
 
-        var me=null;
+        var me = null;
 
         function nearest(type) {
             return geoloc.me().then(function (_me) {
