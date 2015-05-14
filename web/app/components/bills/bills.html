@@ -1,0 +1,18 @@
+<p>From {{beginning.toLocaleDateString() }}, you have spent <strong>{{total_amount / 100}} €</strong> (omg?)</p>
+
+<table class="table table-responsive table-bordered table-striped">
+    <thead>
+    <tr>
+        <th>Date</th>
+        <th>Amount</th>
+        <th>Status</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr ng-repeat="bill in bills">
+        <td>{{bill.due_date.toLocaleDateString()}}</td>
+        <td>{{bill.amount_net / 100}} €</td>
+        <td>{{bill.status}}</td>
+    </tr>
+    </tbody>
+</table>

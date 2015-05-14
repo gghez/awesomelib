@@ -34,7 +34,12 @@ angular.module('awesomelib').config(['$routeProvider', function ($routeProvider)
     $routeProvider.when('/stations/favourite', {
         templateUrl: 'app/components/stations/stations.html',
         controller: 'stationsController'
-    })
+    });
+
+    $routeProvider.when('/bills', {
+        templateUrl: 'app/components/bills/bills.html',
+        controller: 'billsController'
+    });
 
     $routeProvider.when('/station/:stationId', {
         templateUrl: 'app/components/stations/station.html',

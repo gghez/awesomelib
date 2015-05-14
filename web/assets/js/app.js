@@ -34,7 +34,12 @@ angular.module('awesomelib').config(['$routeProvider', function ($routeProvider)
     $routeProvider.when('/stations/favourite', {
         templateUrl: 'app/components/stations/stations.html',
         controller: 'stationsController'
-    })
+    });
+
+    $routeProvider.when('/bills', {
+        templateUrl: 'app/components/bills/bills.html',
+        controller: 'billsController'
+    });
 
     $routeProvider.when('/station/:stationId', {
         templateUrl: 'app/components/stations/station.html',
@@ -45,6 +50,33 @@ angular.module('awesomelib').config(['$routeProvider', function ($routeProvider)
         redirectTo: '/'
     });
 }]);
+
+angular.module('awesomelib').controller('billsController', [
+    '$scope', 'bills',
+    function ($scope, bills) {
+
+        function load() {
+            bills.get().then(function (bills) {
+
+                var total = 0;
+                bills.forEach(function (b) {
+                    b.due_date = new Date(b.due_date);
+                    b.issue_date = new Date(b.issue_date);
+
+                    total += b.amount_net;
+                });
+
+                $scope.beginning = new Date(bills[bills.length - 1].issue_date);
+
+                $scope.total_amount = total;
+                $scope.bills = bills;
+            });
+        }
+
+        load();
+
+    }
+]);
 
 angular.module('awesomelib').controller('homeController', [
     '$scope', 'rentals', '$window', '$location', 'geoloc', 'info', 'stations', 'Loader', '$q',
@@ -285,6 +317,19 @@ angular.module('awesomelib').controller('stationsController', [
 
     }
 ]);
+
+angular.module('awesomelib').service('bills', ['$http', function ($http) {
+
+    return {
+        get: function () {
+            return $http.get('/api/v2/bill').then(function(resp) {
+                console.debug && console.debug('[HTTP] Bills ->', resp.data.results.length);
+                return resp.data.results;
+            });
+        }
+    };
+
+}]);
 
 angular.module('bsLoader', ['ng', 'angularNotification']);
 
