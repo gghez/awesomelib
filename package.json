@@ -1,6 +1,6 @@
 {
   "name": "awesomelib",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "description": "Tools for personal information retrieving.",
   "repository": {
     "type": "git",
@@ -28,8 +28,7 @@
   },
   "author": "Gregory GHEZ",
   "scripts": {
-    "postinstall": "grunt compile",
-    "prepublish": "git push prod"
+    "postinstall": "grunt compile"
   },
   "license": "MIT",
   "bin": {
