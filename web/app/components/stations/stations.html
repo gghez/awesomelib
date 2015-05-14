@@ -1,28 +1,5 @@
 <p class="text-center">Stations near <strong>{{currentAddress}}</strong></p>
 
 <div class="al-station-list">
-    <div ng-repeat="station in stations" class="al-station panel panel-default">
-        <div class="panel-body">
-            <a ng-href="#/station/{{station.id}}" class="al-station-name">{{station.public_name}}</a>
-
-            <div class="pull-right">
-            <button class="btn btn-primary al-station-btn" ng-class="{'disabled': !station.cars}"
-                    title="Click to reserve" ng-click="reserve('car', station.id)">Cars
-                <span class="badge">{{station.cars}}</span>
-            </button>
-            <button class="btn btn-primary al-station-btn" ng-class="{'disabled': !station.slots}"
-                    title="Click to reserve" ng-click="reserve('park', station.id)">Parks
-                <span class="badge">{{station.slots}}</span>
-            </button>
-            </div>
-
-            <span class="al-station-distance" ng-show="station.distance">
-                <span class="glyphicon glyphicon-map-marker"></span>
-                {{ station.distance }} km
-            </span>
-
-
-            <span class="al-station-address">{{station.address}}</span>
-        </div>
-    </div>
+    <al-station-card ng-repeat="station in stations" station="station"></al-station-card>
 </div>

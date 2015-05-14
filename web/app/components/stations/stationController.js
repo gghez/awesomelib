@@ -25,9 +25,9 @@ angular.module('awesomelib').controller('stationController', [
             reservation.reserve(type, stationId).then(load);
         };
 
-        $scope.cancel = function (kind, reservationId) {
-            var type = kind.replace('reservation', '');
-            reservation.cancel(type, reservationId).then(load);
+        $scope.cancel = function () {
+            var type = $scope.res.kind.replace('reservation', '');
+            reservation.cancel(type, $scope.res.reservation_id).then(load);
         };
     }
 ]);

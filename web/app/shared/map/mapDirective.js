@@ -18,7 +18,9 @@ angular.module('awesomelib').directive('alMap', [
         var markers = [];
 
         function displayStations(scope, map, latlng) {
-            stations.near(latlng).then(function (stations) {
+            stations.near(latlng, function (s) {
+                return s.cars > 0;
+            }).then(function (stations) {
                 markers.forEach(function (m) {
                     m.setMap(null);
                 });
@@ -30,7 +32,8 @@ angular.module('awesomelib').directive('alMap', [
                         map: map,
                         position: {lat: station.lat, lng: station.lng},
                         //animation: google.maps.Animation.DROP,
-                        title: station.public_name
+                        title: station.public_name,
+                        icon: 'assets/img/car-available1.png'
                     });
 
                     //function toggleBounce() {
@@ -60,7 +63,8 @@ angular.module('awesomelib').directive('alMap', [
             replace: true,
             scope: {
                 centerOn: '=',
-                followMe: '='
+                followMe: '=',
+                zoom: '='
             },
             link: function (scope, element, attrs) {
 
@@ -75,6 +79,12 @@ angular.module('awesomelib').directive('alMap', [
                 }
 
                 initialize();
+
+                scope.$watch('zoom', function (zoom) {
+                    if (zoom) {
+                        map.set('zoom', zoom);
+                    }
+                });
 
                 scope.$watch('centerOn', function (center) {
                     if (!center) {

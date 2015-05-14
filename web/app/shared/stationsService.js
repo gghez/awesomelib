@@ -14,8 +14,11 @@ angular.module('awesomelib').service('stations', [
                     return resp.data.results;
                 });
             },
-            near: function (loc) {
+            near: function (loc, filter) {
                 var _this = this;
+                filter = filter || function (s) {
+                        return s;
+                    };
 
                 return ((loc.lat && loc.lng) ? $q.when(loc) : geoloc.coordOf(loc))
                     .then(function (latlng) {
@@ -23,7 +26,7 @@ angular.module('awesomelib').service('stations', [
                         return _this.all();
                     })
                     .then(function (stations) {
-                        stations.forEach(function (s) {
+                        stations.filter(filter).forEach(function (s) {
                             s.distance = Math.round(0.01 * geoloc.distance(s, loc)) / 10;
                         });
 
@@ -33,6 +36,17 @@ angular.module('awesomelib').service('stations', [
 
                         return stations.slice(0, 10);
                     });
+            },
+            favourite: function () {
+                var _this = this;
+
+                return $http.get('/api/v2/favourite').then(function (resp) {
+                    console.debug && console.debug('[HTTP] Stations ->', resp.data.results.length);
+                    var stationIds = resp.data.results.map(function (s) {
+                        return s.id
+                    }).join(',');
+                    return _this.get(stationIds);
+                });
             }
         };
     }]);

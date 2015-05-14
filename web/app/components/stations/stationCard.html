@@ -1,0 +1,29 @@
+<div class="al-station panel panel-default">
+    <div class="panel-body">
+        <span class="btn btn-danger btn-xs pull-left al-station-cancel" ng-show="res" ng-click="cancel()">
+            <span class="glyphicon glyphicon-thumbs-down"></span>
+            <span class="glyphicon glyphicon-time"></span>
+            <span al-count-down="res.seconds_before_expiration"></span>
+        </span>
+        <a ng-href="#/station/{{station.id}}" class="al-station-name pull-left">{{station.public_name}}</a>
+
+        <div class="pull-right">
+            <button class="btn btn-primary al-station-btn" ng-class="{'disabled': !station.cars}"
+                    title="Click to reserve" ng-click="reserve('car', station.id)">Cars
+                <span class="badge">{{station.cars}}</span>
+            </button>
+            <button class="btn btn-primary al-station-btn" ng-class="{'disabled': !station.slots}"
+                    title="Click to reserve" ng-click="reserve('park', station.id)">Parks
+                <span class="badge">{{station.slots}}</span>
+            </button>
+        </div>
+
+            <span class="al-station-distance pull-left" ng-show="station.distance">
+                <span class="glyphicon glyphicon-map-marker"></span>
+                {{ station.distance }} km
+            </span>
+
+
+        <span class="al-station-address pull-left">{{station.address}}, {{station.city}}</span>
+    </div>
+</div>
