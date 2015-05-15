@@ -25,6 +25,8 @@ module.exports = function(username, password) {
 };
 ```
 
+Will be replaced by a configuration file as soon as possible.
+
 ## Examples
 
 ### Run as web application
