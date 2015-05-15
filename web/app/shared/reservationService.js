@@ -1,6 +1,7 @@
 angular.module('awesomelib').service('reservation', [
     '$http', 'subscription', '$q', '$timeout',
     function ($http, subscription, $q, $timeout) {
+
         return {
             pending: function () {
                 return $http.get('/api/v2/reservation').then(function (resp) {
@@ -17,7 +18,6 @@ angular.module('awesomelib').service('reservation', [
                     console.info && console.info(type, 'reserved', resp.data);
                     return resp.data;
                 });
-                ;
             },
             cancel: function (type, reservationId) {
                 return $http.delete('/api/v2/' + type + 'reservation-cancel/' + reservationId).then(function () {

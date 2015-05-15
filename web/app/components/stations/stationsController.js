@@ -4,31 +4,50 @@ angular.module('awesomelib').controller('stationsController', [
 
         $scope.favourite = /favourite/.test($location.path());
 
+
         function load() {
             Loader.start('stations');
 
-            geoloc.me().then(function (me) { // try current GPS location
+
+            geoloc.me().then(function (me) {
                 return geoloc.addressOf(me).then(function (address) {
                     $scope.currentAddress = address;
                     return me;
                 });
-            }).catch(function (err) { // Else try customer home location
-                console.warn('geoloc failed, use customer home.', err);
+            }).catch(function () {
+                return null;
+            }).then(function (pos) {
+                if ($scope.favourite) {
+                    return stations.favourite().then(function (_stations) {
+                        if (pos) {
+                            _stations.forEach(function (s) {
+                                s.distance = Math.round(0.01 * geoloc.distance(s, pos)) / 10;
+                            });
 
-                return info.get().then(function (ci) {
-                    $scope.currentAddress = [ci.address.street, ci.address.zipcode, ci.address.city].join(', ');
-                    return geoloc.coordOf($scope.currentAddress);
-                });
-            }).then(function (pos) { // Select nearest stations from reference position
-                return $scope.favourite ? stations.favourite().then(function (_stations) {
-                    return _stations.map(function (s) {
-                        return (s.distance = Math.round(0.01 * geoloc.distance(s, pos)) / 10) && s;
+                            _stations.sort(function (s1, s2) {
+                                return s1.distance < s2.distance ? -1 : 1;
+                            });
+                        }
+
+                        return _stations;
                     });
-                }) : stations.near(pos, function (s) {
-                    return s.cars > 0;
-                });
+                } else if (pos) {
+                    return reservation.pending().then(function(reservations){
+                        return stations.near(pos, function (s) {
+                            return s.cars > 0 || reservations.some(function(r){
+                                    return r.station == s.id && r.status == 'PENDING';
+                                });
+                        });
+                    });
+                } else {
+                    return [];
+                }
             }).then(function (_stations) {
                 $scope.stations = _stations;
+            }).catch(function (err) {
+                if (err.status == 401) {
+                    $location.path('/login');
+                }
             }).finally(function () {
                 Loader.stop('stations');
             });

@@ -18,12 +18,10 @@
         </button>
     </div>
 
-    <h3 class="al-station-name">{{station.public_name}}
-        <small>{{station.address}}, {{station.city}}</small>
-    </h3>
-
-
+    <h3 class="al-station-name">{{station.public_name}}</h3>
 
     <al-map center-on="station" me-to="station" stations="stations"></al-map>
+
+    <p class="text-right"><em><small>{{station.address}}, {{station.city}}</small></em></p>
 
 </div>

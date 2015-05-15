@@ -1,8 +1,10 @@
 angular.module('awesomelib').controller('rentalsController', [
-    '$scope', 'rentals',
-    function ($scope, rentals) {
+    '$scope', 'rentals', 'Loader', '$location',
+    function ($scope, rentals, Loader, $location) {
 
         function load() {
+            Loader.start('rentals');
+
             rentals.get().then(function (history) {
                 var now = new Date();
 
@@ -11,6 +13,12 @@ angular.module('awesomelib').controller('rentalsController', [
                     return start.getYear() == now.getYear() && start.getMonth() == now.getMonth();
                 });
 
+            }).catch(function (err) {
+                if (err.status == 401) {
+                    $location.path('/login');
+                }
+            }).finally(function () {
+                Loader.stop('rentals');
             });
         }
 

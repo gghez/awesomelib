@@ -56,7 +56,9 @@ module.exports.request = function(method, path, data, additionalHeaders) {
         }
       });
     } else {
-      defer.reject('HTTP Status ' + res.statusCode);
+      defer.reject({
+          statusCode: res.statusCode
+      });
     }
   });
 

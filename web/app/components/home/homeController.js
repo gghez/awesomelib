@@ -4,22 +4,8 @@ angular.module('awesomelib').controller('homeController', [
 
         var me = null;
 
-        function nearest(type) {
-            return geoloc.me().then(function (_me) {
-                me = _me;
-                return stations.near(_me, function (s) {
-                    return (type == 'car' ? s.cars : s.parks) > 0;
-                });
-            }).then(function (_stations) {
-                $scope.stations = _stations;
-                $scope.nearest = _stations[0];
-            });
-        }
-
-        function load() {
-            Loader.start('home');
-
-            var rentalsLoad = rentals.get().then(function (history) {
+        function loadRentalsSummary() {
+            return rentals.get().then(function (history) {
                 var now = new Date();
                 var prev = new Date(now);
                 prev.setDate(0);
@@ -39,17 +25,43 @@ angular.module('awesomelib').controller('homeController', [
                     }, 0) / 100
                 };
             });
-
-
-            var nearestLoad = nearest('car');
-
-            $q.all([rentalsLoad, nearestLoad]).finally(function () {
-                Loader.stop('home');
-                $scope.initialPosition = me;
-            });
         }
 
-        load();
+        function loadMap() {
+            var defer = $q.defer();
+
+            var watchId = geoloc.watchMe(function (_me) {
+                me = _me;
+                stations.near(_me, function (s) {
+                    return s.cars > 0;
+                }).then(function (_stations) {
+                    $scope.stations = _stations;
+                    $scope.nearest = _stations[0];
+                    defer.resolve();
+                });
+            });
+
+            $scope.$on('$destroy', function () {
+                geoloc.unwatch(watchId);
+            });
+
+            return defer.promise;
+        }
+
+
+        Loader.start('home');
+
+        var rentalsSummary = loadRentalsSummary();
+        var mapInit = loadMap();
+
+        $q.all([rentalsSummary, mapInit]).catch(function (err) {
+            if (err.status == 401) {
+                $location.path('/login');
+            }
+        }).finally(function () {
+            Loader.stop('home');
+            $scope.initialPosition = me;
+        });
 
 
     }

@@ -1,6 +1,7 @@
 <p class="text-center" ng-show="favourite">Your favourite stations</p>
-<p class="text-center" ng-hide="favourite">Stations near <strong>{{currentAddress}}</strong></p>
+<p class="text-center" ng-hide="favourite || !currentAddress">Stations near <strong>{{currentAddress}}</strong></p>
 
-<div class="al-station-list">
-    <al-station-card ng-repeat="station in stations" station="station"></al-station-card>
+<al-station-card ng-repeat="station in stations" station="station"></al-station-card>
+<div class="alert alert-warning" ng-show="!stations || !stations.length">
+    No station found.
 </div>

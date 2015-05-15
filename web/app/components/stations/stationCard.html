@@ -1,35 +1,34 @@
-<div class="al-station-card panel panel-default">
-    <div class="panel-body">
+<div class="al-station-card">
 
-        <a ng-href="#/station/{{station.id}}" class="al-station-name pull-left">{{station.public_name}}</a>
+    <div class="pull-right">
+        <button class="btn btn-danger al-station-btn" ng-show="res" ng-click="cancel()">
+            <span class="glyphicon glyphicon-thumbs-down"></span>
+            <span class="glyphicon glyphicon-time"></span>
+            <span al-count-down="res.seconds_before_expiration"></span>
+        </button>
 
-        <div class="pull-right">
-            <button class="btn btn-danger al-station-btn" ng-show="res" ng-click="cancel()">
-                <span class="glyphicon glyphicon-thumbs-down"></span>
-                <span class="glyphicon glyphicon-time"></span>
-                <span al-count-down="res.seconds_before_expiration"></span>
-            </button>
+        <button class="btn btn-primary al-station-btn" ng-hide="noCar || res" ng-class="{'disabled': !station.cars}"
+                title="Click to reserve" ng-click="reserve('car', station.id)">
+            <span class="glyphicon glyphicon-thumbs-up" ng-show="noPark"></span>
+            Car
+            <span class="badge">{{station.cars}}</span>
+        </button>
+        <button class="btn btn-primary al-station-btn" ng-hide="noPark || res"
+                ng-class="{'disabled': !station.slots}"
+                title="Click to reserve" ng-click="reserve('park', station.id)">
+            <span class="glyphicon glyphicon-thumbs-up" ng-show="noCar"></span>
+            Park
+            <span class="badge">{{station.slots}}</span>
+        </button>
+    </div>
 
-            <button class="btn btn-primary al-station-btn" ng-hide="noCar || res" ng-class="{'disabled': !station.cars}"
-                    title="Click to reserve" ng-click="reserve('car', station.id)">
-                <span class="glyphicon glyphicon-thumbs-up" ng-show="noPark"></span>
-                Cars
-                <span class="badge">{{station.cars}}</span>
-            </button>
-            <button class="btn btn-primary al-station-btn" ng-hide="noPark || res" ng-class="{'disabled': !station.slots}"
-                    title="Click to reserve" ng-click="reserve('park', station.id)">
-                <span class="glyphicon glyphicon-thumbs-up" ng-show="noCar"></span>
-                Parks
-                <span class="badge">{{station.slots}}</span>
-            </button>
-        </div>
-
-            <span class="al-station-distance pull-left" ng-show="station.distance">
+    <p>
+        <a ng-href="#/station/{{station.id}}" class="al-station-name">{{station.public_name}}</a>
+        <br/>
+            <span class="al-station-distance" ng-show="station.distance">
                 <span class="glyphicon glyphicon-map-marker"></span>
                 {{ station.distance }} km
             </span>
+    </p>
 
-
-        <span class="al-station-address pull-left">{{station.address}}, {{station.city}}</span>
-    </div>
 </div>

@@ -83,6 +83,10 @@ angular.module('awesomelib').service('geoloc', ['$q', function ($q) {
             return defer.promise;
         },
 
+        unwatch: function (watchId) {
+            navigator.geolocation && navigator.geolocation.clearWatch(watchId);
+        },
+
         watchMe: function (callback) {
             if (!callback) {
                 console.error('No callback defined for geolocation watching.');

@@ -52,10 +52,12 @@ angular.module('awesomelib').config(['$routeProvider', function ($routeProvider)
 }]);
 
 angular.module('awesomelib').controller('billsController', [
-    '$scope', 'bills',
-    function ($scope, bills) {
+    '$scope', 'bills', 'Loader', '$location',
+    function ($scope, bills, Loader, $location) {
 
         function load() {
+            Loader.start('bills');
+
             bills.get().then(function (bills) {
 
                 var total = 0;
@@ -70,6 +72,12 @@ angular.module('awesomelib').controller('billsController', [
 
                 $scope.total_amount = total;
                 $scope.bills = bills;
+            }).catch(function(err){
+               if (err.status == 401){
+                   $location.path('/login');
+               }
+            }).finally(function(){
+                Loader.stop('bills');
             });
         }
 
@@ -84,22 +92,8 @@ angular.module('awesomelib').controller('homeController', [
 
         var me = null;
 
-        function nearest(type) {
-            return geoloc.me().then(function (_me) {
-                me = _me;
-                return stations.near(_me, function (s) {
-                    return (type == 'car' ? s.cars : s.parks) > 0;
-                });
-            }).then(function (_stations) {
-                $scope.stations = _stations;
-                $scope.nearest = _stations[0];
-            });
-        }
-
-        function load() {
-            Loader.start('home');
-
-            var rentalsLoad = rentals.get().then(function (history) {
+        function loadRentalsSummary() {
+            return rentals.get().then(function (history) {
                 var now = new Date();
                 var prev = new Date(now);
                 prev.setDate(0);
@@ -119,17 +113,43 @@ angular.module('awesomelib').controller('homeController', [
                     }, 0) / 100
                 };
             });
-
-
-            var nearestLoad = nearest('car');
-
-            $q.all([rentalsLoad, nearestLoad]).finally(function () {
-                Loader.stop('home');
-                $scope.initialPosition = me;
-            });
         }
 
-        load();
+        function loadMap() {
+            var defer = $q.defer();
+
+            var watchId = geoloc.watchMe(function (_me) {
+                me = _me;
+                stations.near(_me, function (s) {
+                    return s.cars > 0;
+                }).then(function (_stations) {
+                    $scope.stations = _stations;
+                    $scope.nearest = _stations[0];
+                    defer.resolve();
+                });
+            });
+
+            $scope.$on('$destroy', function () {
+                geoloc.unwatch(watchId);
+            });
+
+            return defer.promise;
+        }
+
+
+        Loader.start('home');
+
+        var rentalsSummary = loadRentalsSummary();
+        var mapInit = loadMap();
+
+        $q.all([rentalsSummary, mapInit]).catch(function (err) {
+            if (err.status == 401) {
+                $location.path('/login');
+            }
+        }).finally(function () {
+            Loader.stop('home');
+            $scope.initialPosition = me;
+        });
 
 
     }
@@ -148,10 +168,11 @@ angular.module('awesomelib').controller('loginController', ['$scope', 'login', '
 }]);
 
 angular.module('awesomelib').controller('pendingController', [
-    '$interval', '$scope', 'reservation', 'stations',
-    function ($interval, $scope, reservation, stations) {
+    '$interval', '$scope', 'reservation', 'stations', 'Loader', '$location',
+    function ($interval, $scope, reservation, stations, Loader, $location) {
 
         function load() {
+            Loader.start('pending');
 
             reservation.pending().then(function (reservations) {
                 $scope.reservations = reservations;
@@ -162,6 +183,12 @@ angular.module('awesomelib').controller('pendingController', [
                     });
                 });
 
+            }).catch(function (err) {
+                if (err.status == 401) {
+                    $location.path('/login');
+                }
+            }).finally(function () {
+                Loader.stop('pending');
             });
         }
 
@@ -178,10 +205,12 @@ angular.module('awesomelib').controller('pendingController', [
 ]);
 
 angular.module('awesomelib').controller('rentalsController', [
-    '$scope', 'rentals',
-    function ($scope, rentals) {
+    '$scope', 'rentals', 'Loader', '$location',
+    function ($scope, rentals, Loader, $location) {
 
         function load() {
+            Loader.start('rentals');
+
             rentals.get().then(function (history) {
                 var now = new Date();
 
@@ -190,6 +219,12 @@ angular.module('awesomelib').controller('rentalsController', [
                     return start.getYear() == now.getYear() && start.getMonth() == now.getMonth();
                 });
 
+            }).catch(function (err) {
+                if (err.status == 401) {
+                    $location.path('/login');
+                }
+            }).finally(function () {
+                Loader.stop('rentals');
             });
         }
 
@@ -282,31 +317,50 @@ angular.module('awesomelib').controller('stationsController', [
 
         $scope.favourite = /favourite/.test($location.path());
 
+
         function load() {
             Loader.start('stations');
 
-            geoloc.me().then(function (me) { // try current GPS location
+
+            geoloc.me().then(function (me) {
                 return geoloc.addressOf(me).then(function (address) {
                     $scope.currentAddress = address;
                     return me;
                 });
-            }).catch(function (err) { // Else try customer home location
-                console.warn('geoloc failed, use customer home.', err);
+            }).catch(function () {
+                return null;
+            }).then(function (pos) {
+                if ($scope.favourite) {
+                    return stations.favourite().then(function (_stations) {
+                        if (pos) {
+                            _stations.forEach(function (s) {
+                                s.distance = Math.round(0.01 * geoloc.distance(s, pos)) / 10;
+                            });
 
-                return info.get().then(function (ci) {
-                    $scope.currentAddress = [ci.address.street, ci.address.zipcode, ci.address.city].join(', ');
-                    return geoloc.coordOf($scope.currentAddress);
-                });
-            }).then(function (pos) { // Select nearest stations from reference position
-                return $scope.favourite ? stations.favourite().then(function (_stations) {
-                    return _stations.map(function (s) {
-                        return (s.distance = Math.round(0.01 * geoloc.distance(s, pos)) / 10) && s;
+                            _stations.sort(function (s1, s2) {
+                                return s1.distance < s2.distance ? -1 : 1;
+                            });
+                        }
+
+                        return _stations;
                     });
-                }) : stations.near(pos, function (s) {
-                    return s.cars > 0;
-                });
+                } else if (pos) {
+                    return reservation.pending().then(function(reservations){
+                        return stations.near(pos, function (s) {
+                            return s.cars > 0 || reservations.some(function(r){
+                                    return r.station == s.id && r.status == 'PENDING';
+                                });
+                        });
+                    });
+                } else {
+                    return [];
+                }
             }).then(function (_stations) {
                 $scope.stations = _stations;
+            }).catch(function (err) {
+                if (err.status == 401) {
+                    $location.path('/login');
+                }
             }).finally(function () {
                 Loader.stop('stations');
             });
@@ -479,8 +533,6 @@ angular.module('awesomelib').service('control', [
 
 angular.module('awesomelib').directive('alCountDown', ['$interval', function ($interval) {
 
-    var countStop = null;
-
     function startCountDown(element, seconds) {
         stopCountDown();
 
@@ -500,26 +552,28 @@ angular.module('awesomelib').directive('alCountDown', ['$interval', function ($i
 
         update();
 
-        countStop = $interval(update, 1000);
+        return $interval(update, 1000);
     }
 
-    function stopCountDown() {
+    function stopCountDown(countStop) {
         countStop && $interval.cancel(countStop);
     }
 
     return {
         restrict: 'A',
         link: function (scope, element, attrs) {
+            var countStop = null;
+
             scope.$watch(attrs.alCountDown, function (seconds) {
                 if (seconds) {
-                    startCountDown(element, seconds);
+                    countStop = startCountDown(element, seconds);
                 } else {
-                    stopCountDown();
+                    stopCountDown(countStop);
                 }
             });
 
             scope.$on('$destroy', function () {
-                stopCountDown();
+                stopCountDown(countStop);
             });
         }
     }
@@ -659,6 +713,10 @@ angular.module('awesomelib').service('geoloc', ['$q', function ($q) {
             }
 
             return defer.promise;
+        },
+
+        unwatch: function (watchId) {
+            navigator.geolocation && navigator.geolocation.clearWatch(watchId);
         },
 
         watchMe: function (callback) {
@@ -830,6 +888,7 @@ angular.module('awesomelib').service('rentals', ['$http', function($http) {
 angular.module('awesomelib').service('reservation', [
     '$http', 'subscription', '$q', '$timeout',
     function ($http, subscription, $q, $timeout) {
+
         return {
             pending: function () {
                 return $http.get('/api/v2/reservation').then(function (resp) {
@@ -846,7 +905,6 @@ angular.module('awesomelib').service('reservation', [
                     console.info && console.info(type, 'reserved', resp.data);
                     return resp.data;
                 });
-                ;
             },
             cancel: function (type, reservationId) {
                 return $http.delete('/api/v2/' + type + 'reservation-cancel/' + reservationId).then(function () {

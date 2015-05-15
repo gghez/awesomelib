@@ -1,8 +1,9 @@
 angular.module('awesomelib').controller('pendingController', [
-    '$interval', '$scope', 'reservation', 'stations',
-    function ($interval, $scope, reservation, stations) {
+    '$interval', '$scope', 'reservation', 'stations', 'Loader', '$location',
+    function ($interval, $scope, reservation, stations, Loader, $location) {
 
         function load() {
+            Loader.start('pending');
 
             reservation.pending().then(function (reservations) {
                 $scope.reservations = reservations;
@@ -13,6 +14,12 @@ angular.module('awesomelib').controller('pendingController', [
                     });
                 });
 
+            }).catch(function (err) {
+                if (err.status == 401) {
+                    $location.path('/login');
+                }
+            }).finally(function () {
+                Loader.stop('pending');
             });
         }
 

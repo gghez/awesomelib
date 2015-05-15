@@ -1,8 +1,10 @@
 angular.module('awesomelib').controller('billsController', [
-    '$scope', 'bills',
-    function ($scope, bills) {
+    '$scope', 'bills', 'Loader', '$location',
+    function ($scope, bills, Loader, $location) {
 
         function load() {
+            Loader.start('bills');
+
             bills.get().then(function (bills) {
 
                 var total = 0;
@@ -17,6 +19,12 @@ angular.module('awesomelib').controller('billsController', [
 
                 $scope.total_amount = total;
                 $scope.bills = bills;
+            }).catch(function(err){
+               if (err.status == 401){
+                   $location.path('/login');
+               }
+            }).finally(function(){
+                Loader.stop('bills');
             });
         }
 

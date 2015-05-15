@@ -1,7 +1,5 @@
 angular.module('awesomelib').directive('alCountDown', ['$interval', function ($interval) {
 
-    var countStop = null;
-
     function startCountDown(element, seconds) {
         stopCountDown();
 
@@ -21,26 +19,28 @@ angular.module('awesomelib').directive('alCountDown', ['$interval', function ($i
 
         update();
 
-        countStop = $interval(update, 1000);
+        return $interval(update, 1000);
     }
 
-    function stopCountDown() {
+    function stopCountDown(countStop) {
         countStop && $interval.cancel(countStop);
     }
 
     return {
         restrict: 'A',
         link: function (scope, element, attrs) {
+            var countStop = null;
+
             scope.$watch(attrs.alCountDown, function (seconds) {
                 if (seconds) {
-                    startCountDown(element, seconds);
+                    countStop = startCountDown(element, seconds);
                 } else {
-                    stopCountDown();
+                    stopCountDown(countStop);
                 }
             });
 
             scope.$on('$destroy', function () {
-                stopCountDown();
+                stopCountDown(countStop);
             });
         }
     }
