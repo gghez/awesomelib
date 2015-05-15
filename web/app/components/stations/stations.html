@@ -1,7 +1,13 @@
-<p class="text-center" ng-show="favourite">Your favourite stations</p>
-<p class="text-center" ng-hide="favourite || !currentAddress">Stations near <strong>{{currentAddress}}</strong></p>
+<div class="btn-group al-station-selector">
+    <button ng-click="filterStations('car')" class="btn btn-primary" ng-class="{active: type == 'car'}">Cars</button>
+    <button ng-click="filterStations('park')" class="btn btn-primary" ng-class="{active: type == 'park'}">Parks</button>
+</div>
 
-<al-station-card ng-repeat="station in stations" station="station"></al-station-card>
+<al-station-card
+  no-park="type == 'car'"
+  no-car="type == 'park'"
+  ng-repeat="station in stations"
+  station="station"></al-station-card>
 <div class="alert alert-warning" ng-show="!stations || !stations.length">
     No station found.
 </div>

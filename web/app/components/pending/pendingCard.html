@@ -1,0 +1,20 @@
+<div class="alert al-pending-card clearfix" ng-class="{
+'alert-danger': reservation.status == 'CANCELLED',
+'alert-success': reservation.status == 'TAKEN',
+'alert-warning': reservation.status == 'PENDING'
+}">
+    <span class="al-pending-status">{{ reservation.status }}</span>
+
+    <span class="al-pending-date">{{ reservation.created_at }} UTC</span>
+
+    <a ng-href="#/station/{{ reservation.station.id }}" class="al-pending-station">
+      {{ reservation.station.public_name }}
+    </a>
+
+    <button class="btn btn-danger btn-xs pull-right al-pending-btn" ng-if="reservation.status == 'PENDING'" ng-click="cancel()">
+        <span class="glyphicon glyphicon-thumbs-down"></span>
+        <span class="glyphicon glyphicon-time"></span>
+        <span al-count-down="reservation.seconds_before_expiration"></span>
+    </button>
+
+</div>

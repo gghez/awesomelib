@@ -1,0 +1,20 @@
+<div class="panel panel-default al-rental-card clearfix">
+    <div class="panel-body">
+        <span class="al-rental-date">{{ rental.humanStart }}</span>
+    <span class="al-rental-run">
+      <span class="glyphicon glyphicon-log-out"></span>
+      <a ng-href="#/station/{{rental.start_station_id}}">{{ rental.start_station_name }}</a><br/>
+      <a ng-href="#/station/{{rental.end_station_id}}">{{ rental.end_station_name }}</a>
+      <span class="glyphicon glyphicon-log-in"></span>
+    </span>
+    <span class="al-rental-duration" ng-class="{
+      'text-danger':rental.net_amount == 366 || rental.net_amount > 500,
+      'text-success':rental.net_amount > 366 && rental.net_amount <= 500
+    }">{{ rental.billed_duration / 60 }} min</span>
+    <span class="al-rental-amount" ng-class="{
+      'text-danger':rental.net_amount == 366 || rental.net_amount > 500,
+      'text-success':rental.net_amount > 366 && rental.net_amount <= 500
+    }">{{ rental.net_amount / 100 }} €</span>
+
+    </div>
+</div>

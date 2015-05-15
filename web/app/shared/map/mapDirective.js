@@ -1,6 +1,6 @@
 angular.module('awesomelib').directive('alMap', [
     'stations', '$q', 'geoloc', '$location',
-    function (stations, $q, geoloc, $location) {
+    function(stations, $q, geoloc, $location) {
 
         var markerMe = null;
 
@@ -26,7 +26,7 @@ angular.module('awesomelib').directive('alMap', [
                 stations: '=',
                 meTo: '='
             },
-            link: function (scope, element, attrs) {
+            link: function(scope, element, attrs) {
 
                 var map = new google.maps.Map(element[0], {
                     zoom: 16,
@@ -35,7 +35,7 @@ angular.module('awesomelib').directive('alMap', [
                 var directionsRenderer = new google.maps.DirectionsRenderer();
                 var directionsService = new google.maps.DirectionsService();
 
-                scope.$watch('zoom', function (zoom) {
+                scope.$watch('zoom', function(zoom) {
                     if (zoom) {
                         map.set('zoom', zoom);
                     }
@@ -43,8 +43,8 @@ angular.module('awesomelib').directive('alMap', [
 
                 var markers = [];
 
-                scope.$watch('stations', function (stations) {
-                    markers.forEach(function (m) {
+                scope.$watch('stations', function(stations) {
+                    markers.forEach(function(m) {
                         m.setMap(null);
                     });
                     markers.length = 0;
@@ -53,16 +53,19 @@ angular.module('awesomelib').directive('alMap', [
                         return;
                     }
 
-                    stations.forEach(function (station) {
+                    stations.forEach(function(station) {
                         var marker = new google.maps.Marker({
                             map: map,
-                            position: {lat: station.lat, lng: station.lng},
+                            position: {
+                                lat: station.lat,
+                                lng: station.lng
+                            },
                             title: station.public_name,
                             icon: 'assets/img/car_orb.png'
                         });
 
-                        google.maps.event.addListener(marker, 'click', function () {
-                            scope.$apply(function () {
+                        google.maps.event.addListener(marker, 'click', function() {
+                            scope.$apply(function() {
                                 $location.path('/station/' + station.id);
                             });
                         });
@@ -72,7 +75,7 @@ angular.module('awesomelib').directive('alMap', [
 
                 });
 
-                scope.$watch('centerOn', function (center) {
+                scope.$watch('centerOn', function(center) {
                     google.maps.event.trigger(map, 'resize');
 
                     if (!center) {
@@ -80,18 +83,18 @@ angular.module('awesomelib').directive('alMap', [
                     }
 
                     ((center.lat && center.lng) ? $q.when(center) : geoloc.coordOf(center))
-                        .then(function (latlng) {
-                            map.panTo(latlng);
-                        });
+                    .then(function(latlng) {
+                        map.panTo(latlng);
+                    });
                 });
 
-                scope.$watch('meTo', function (target) {
+                scope.$watch('meTo', function(target) {
                     directionsRenderer.setMap(null);
                     if (!target) {
                         return;
                     }
 
-                    geoloc.me().then(function (me) {
+                    geoloc.me().then(function(me) {
                         var start = new google.maps.LatLng(me.lat, me.lng);
                         var end = new google.maps.LatLng(target.lat, target.lng);
                         var request = {
@@ -99,10 +102,10 @@ angular.module('awesomelib').directive('alMap', [
                             destination: end,
                             travelMode: google.maps.TravelMode.WALKING
                         };
-                        directionsService.route(request, function (response, status) {
+                        directionsService.route(request, function(directions, status) {
                             if (status == google.maps.DirectionsStatus.OK) {
                                 directionsRenderer.setMap(map);
-                                directionsRenderer.setDirections(response);
+                                directionsRenderer.setDirections(directions);
                                 map.set('zoom', 17);
                             }
                         });
@@ -110,7 +113,7 @@ angular.module('awesomelib').directive('alMap', [
 
                 });
 
-                var watchId = geoloc.watchMe(function (me) {
+                var watchId = geoloc.watchMe(function(me) {
                     displayMe(map, me);
 
                     if (scope.followMe) {
@@ -118,7 +121,7 @@ angular.module('awesomelib').directive('alMap', [
                     }
                 });
 
-                scope.$on('$destroy', function () {
+                scope.$on('$destroy', function() {
                     watchId && navigator.geolocation.clearWatch(watchId);
                 });
 

@@ -88,27 +88,27 @@ angular.module('awesomelib').controller('billsController', [
 
 angular.module('awesomelib').controller('homeController', [
     '$scope', 'rentals', '$window', '$location', 'geoloc', 'info', 'stations', 'Loader', '$q',
-    function ($scope, rentals, $window, $location, geoloc, info, stations, Loader, $q) {
+    function($scope, rentals, $window, $location, geoloc, info, stations, Loader, $q) {
 
         var me = null;
 
         function loadRentalsSummary() {
-            return rentals.get().then(function (history) {
+            return rentals.get().then(function(history) {
                 var now = new Date();
                 var prev = new Date(now);
                 prev.setDate(0);
 
                 $scope.usage = {
-                    cur: history.filter(function (rental) {
+                    cur: history.filter(function(rental) {
                         var start = new Date(rental.start);
                         return start.getYear() == now.getYear() && start.getMonth() == now.getMonth();
-                    }).reduce(function (sum, rental) {
+                    }).reduce(function(sum, rental) {
                         return sum + rental.net_amount;
                     }, 0) / 100,
-                    prev: history.filter(function (rental) {
+                    prev: history.filter(function(rental) {
                         var start = new Date(rental.start);
                         return start.getYear() == prev.getYear() && start.getMonth() == prev.getMonth();
-                    }).reduce(function (sum, rental) {
+                    }).reduce(function(sum, rental) {
                         return sum + rental.net_amount;
                     }, 0) / 100
                 };
@@ -118,35 +118,40 @@ angular.module('awesomelib').controller('homeController', [
         function loadMap() {
             var defer = $q.defer();
 
-            var watchId = geoloc.watchMe(function (_me) {
-                me = _me;
-                stations.near(_me, function (s) {
-                    return s.cars > 0;
-                }).then(function (_stations) {
-                    $scope.stations = _stations;
-                    $scope.nearest = _stations[0];
-                    defer.resolve();
-                });
+            var watchId = geoloc.watchMe(function(err, _me) {
+                if (err) {
+                    defer.reject(err);
+                } else {
+                    me = _me;
+                    stations.near(_me, function(s) {
+                        return s.cars > 0;
+                    }).then(function(_stations) {
+                        $scope.stations = _stations;
+                        $scope.nearest = _stations[0];
+                        defer.resolve();
+                    });
+                }
             });
 
-            $scope.$on('$destroy', function () {
+            $scope.$on('$destroy', function() {
                 geoloc.unwatch(watchId);
             });
 
             return defer.promise;
         }
 
-
         Loader.start('home');
 
         var rentalsSummary = loadRentalsSummary();
         var mapInit = loadMap();
 
-        $q.all([rentalsSummary, mapInit]).catch(function (err) {
+        $q.all([rentalsSummary, mapInit]).catch(function(err) {
             if (err.status == 401) {
                 $location.path('/login');
+            } else {
+                console.error('Failed to initialize some home page component.', err);
             }
-        }).finally(function () {
+        }).finally(function() {
             Loader.stop('home');
             $scope.initialPosition = me;
         });
@@ -165,6 +170,44 @@ angular.module('awesomelib').controller('loginController', ['$scope', 'login', '
     });
   };
 
+}]);
+
+angular.module('awesomelib').directive('alPendingCard', [function() {
+    return {
+        restrict: 'E',
+        replace: true,
+        templateUrl: 'app/components/pending/pendingCard.html',
+        scope: {
+            reservation: '='
+        },
+        controller: ['$scope', 'reservation', function($scope, reservation) {
+            /*$scope.$watch('reservation', function(res) {
+                if (res) {
+                    var date = new Date(res.created_at);
+                    var now = new Date();
+                    if (now.toDateString() == date.toDateString()) {
+                        res.humanDate = 'Today';
+                    } else {
+                        res.humanDate = date.toLocaleString();
+                    }
+                }
+            });*/
+
+            $scope.cancel = function() {
+                reservation.cancel($scope.reservation.kind.replace('reservation', ''), $scope.reservation.reservation_id).then(function() {
+                    return reservation.pending();
+                }).then(function(_reservations) {
+                    _reservations.some(function(r) {
+                        if (r.reservation_id == $scope.reservation.reservation_id) {
+                            $scope.reservation.status = r.status;
+                            return true;
+                        }
+                    });
+                });
+            };
+
+        }]
+    };
 }]);
 
 angular.module('awesomelib').controller('pendingController', [
@@ -193,16 +236,36 @@ angular.module('awesomelib').controller('pendingController', [
         }
 
         load();
-
-        $scope.cancel = function (type, reservationId) {
-            reservation.cancel(type, reservationId).then(load);
-        };
-
-        $scope.reserve = function (type, stationId) {
-            return reservation.reserve(type, stationId).then(load);
-        };
     }
 ]);
+
+angular.module('awesomelib').directive('alRentalCard', [function() {
+    return {
+        restrict: 'E',
+        replace: true,
+        templateUrl: 'app/components/rentals/rentalCard.html',
+        scope: {
+            rental: '='
+        },
+        link: function(scope) {
+            scope.$watch('rental', function(rental) {
+                if (rental) {
+                    var startDate = new Date(rental.start);
+                    var now = new Date();
+                    var yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+
+                    if (now.toDateString() == startDate.toDateString()) {
+                        rental.humanStart = 'Today';
+                    } else if (yesterday.toDateString() == startDate.toDateString()) {
+                        rental.humanStart = 'Yesterday';
+                    } else {
+                        rental.humanStart = startDate.toLocaleString();
+                    }
+                }
+            });
+        }
+    };
+}]);
 
 angular.module('awesomelib').controller('rentalsController', [
     '$scope', 'rentals', 'Loader', '$location',
@@ -277,16 +340,18 @@ angular.module('awesomelib').directive('alStationCard', [function () {
 }]);
 
 angular.module('awesomelib').controller('stationController', [
-    '$scope', 'stations', '$routeParams', 'reservation', '$interval',
-    function ($scope, stations, $routeParams, reservation, $interval) {
+    '$scope', 'stations', '$routeParams', 'reservation', '$interval', '$location', 'Loader',
+    function($scope, stations, $routeParams, reservation, $interval, $location, Loader) {
 
         function load() {
-            stations.get($routeParams.stationId).then(function (stations) {
+            Loader.start('station');
+
+            stations.get($routeParams.stationId).then(function(stations) {
                 $scope.stations = stations;
                 $scope.station = stations[0];
 
-                reservation.pending().then(function (reservations) {
-                    if (!reservations.some(function (r) {
+                reservation.pending().then(function(reservations) {
+                    if (!reservations.some(function(r) {
                             if (r.station == $scope.station.id && r.status == 'PENDING') {
                                 $scope.res = r;
                                 return true;
@@ -295,16 +360,22 @@ angular.module('awesomelib').controller('stationController', [
                         $scope.res = null;
                     }
                 });
+            }).catch(function(err) {
+                if (err.status == 401) {
+                    $location.path('/login');
+                }
+            }).finally(function() {
+                Loader.stop('station');
             });
         }
 
         load();
 
-        $scope.reserve = function (type, stationId) {
+        $scope.reserve = function(type, stationId) {
             reservation.reserve(type, stationId).then(load);
         };
 
-        $scope.cancel = function () {
+        $scope.cancel = function() {
             var type = $scope.res.kind.replace('reservation', '');
             reservation.cancel(type, $scope.res.reservation_id).then(load);
         };
@@ -313,62 +384,55 @@ angular.module('awesomelib').controller('stationController', [
 
 angular.module('awesomelib').controller('stationsController', [
     '$scope', 'stations', '$location', 'reservation', 'geoloc', 'Loader', 'info', '$routeParams',
-    function ($scope, stations, $location, reservation, geoloc, Loader, info) {
+    function($scope, stations, $location, reservation, geoloc, Loader, info) {
+
+        var _stations = null;
+        var _reservations = null;
 
         $scope.favourite = /favourite/.test($location.path());
-
 
         function load() {
             Loader.start('stations');
 
-
-            geoloc.me().then(function (me) {
-                return geoloc.addressOf(me).then(function (address) {
-                    $scope.currentAddress = address;
-                    return me;
-                });
-            }).catch(function () {
+            geoloc.me().catch(function(err) {
+                console.warn('Cannot retrieve geolocation.', err);
                 return null;
-            }).then(function (pos) {
+            }).then(function(pos) {
                 if ($scope.favourite) {
-                    return stations.favourite().then(function (_stations) {
-                        if (pos) {
-                            _stations.forEach(function (s) {
-                                s.distance = Math.round(0.01 * geoloc.distance(s, pos)) / 10;
-                            });
-
-                            _stations.sort(function (s1, s2) {
-                                return s1.distance < s2.distance ? -1 : 1;
-                            });
-                        }
-
-                        return _stations;
+                    return stations.favourite().then(function(favourites) {
+                        return pos ? stations.sortedFrom(favourites, pos) : favourites;
                     });
                 } else if (pos) {
-                    return reservation.pending().then(function(reservations){
-                        return stations.near(pos, function (s) {
-                            return s.cars > 0 || reservations.some(function(r){
-                                    return r.station == s.id && r.status == 'PENDING';
-                                });
-                        });
+                    return reservation.pending().then(function(reservations) {
+                        _reservations = reservations;
+                        return stations.near(pos);
                     });
                 } else {
                     return [];
                 }
-            }).then(function (_stations) {
-                $scope.stations = _stations;
-            }).catch(function (err) {
+            }).then(function(filteredStations) {
+                _stations = filteredStations;
+            }).catch(function(err) {
                 if (err.status == 401) {
                     $location.path('/login');
                 }
-            }).finally(function () {
+            }).finally(function() {
+                $scope.filterStations('car');
                 Loader.stop('stations');
             });
         }
 
+        $scope.filterStations = function(type) {
+            $scope.type = type;
+            $scope.stations = _stations && _stations.filter(function(s) {
+                return (s.cars > 0 && type == 'car') ||
+                    (s.slots > 0 && type == 'park') || (_reservations && _reservations.some(function(r) {
+                        return r.station == s.id && r.status == 'PENDING';
+                    }));
+            });
+        };
+
         load();
-
-
     }
 ]);
 
@@ -630,7 +694,7 @@ angular.module('awesomelib').controller('mainController', [
     }
 ]);
 
-angular.module('awesomelib').service('geoloc', ['$q', function ($q) {
+angular.module('awesomelib').service('geoloc', ['$q', function($q) {
     var geocoder = new google.maps.Geocoder();
 
     function radians(num) {
@@ -654,13 +718,13 @@ angular.module('awesomelib').service('geoloc', ['$q', function ($q) {
 
     return {
         distance: distance,
-        addressOf: function (latlng) {
+        addressOf: function(latlng) {
             var defer = $q.defer();
 
             console.debug && console.debug('Geocoder.addressOf', latlng);
             geocoder.geocode({
                 'latLng': latlng
-            }, function (results, status) {
+            }, function(results, status) {
                 if (status == google.maps.GeocoderStatus.OK) {
                     if (results[1]) {
                         console.debug && console.debug('=>', results[1].formatted_address);
@@ -676,14 +740,17 @@ angular.module('awesomelib').service('geoloc', ['$q', function ($q) {
             return defer.promise;
         },
 
-        coordOf: function (address) {
+        coordOf: function(address) {
             var defer = $q.defer();
 
             geocoder.geocode({
                 'address': address
-            }, function (results, status) {
+            }, function(results, status) {
                 if (status == google.maps.GeocoderStatus.OK) {
-                    var latlng = {lat: results[0].geometry.location.A, lng: results[0].geometry.location.F};
+                    var latlng = {
+                        lat: results[0].geometry.location.A,
+                        lng: results[0].geometry.location.F
+                    };
                     console.debug && console.debug('Geocoder.coordOf', address, latlng);
                     defer.resolve(latlng);
                 } else {
@@ -694,17 +761,20 @@ angular.module('awesomelib').service('geoloc', ['$q', function ($q) {
             return defer.promise;
         },
 
-        me: function () {
+        me: function() {
             var defer = $q.defer();
 
             if (!navigator.geolocation) {
                 defer.reject('No geolocation API.');
             } else {
-                navigator.geolocation.getCurrentPosition(function (pos) {
-                    var me = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+                navigator.geolocation.getCurrentPosition(function(pos) {
+                    var me = {
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude
+                    };
                     console.debug && console.debug('Me', me);
                     defer.resolve(me);
-                }, function (err) {
+                }, function(err) {
                     defer.reject(err);
                 }, {
                     maximumAge: 0,
@@ -715,38 +785,38 @@ angular.module('awesomelib').service('geoloc', ['$q', function ($q) {
             return defer.promise;
         },
 
-        unwatch: function (watchId) {
+        unwatch: function(watchId) {
             navigator.geolocation && navigator.geolocation.clearWatch(watchId);
         },
 
-        watchMe: function (callback) {
+        watchMe: function(callback) {
             if (!callback) {
-                console.error('No callback defined for geolocation watching.');
-                return;
+                throw new Error('No callback defined for geolocation watching.');
             }
 
             if (!navigator.geolocation) {
-                console.error('No geolocation API.');
-                return;
+                callback('No geolocation API.');
+            } else {
+                return navigator.geolocation.watchPosition(function(pos) {
+                    var me = {
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude
+                    };
+                    console.debug && console.debug('Me [update]', me);
+                    callback(undefined, me);
+                }, callback, {
+                    maximumAge: 0,
+                    enableHighAccuracy: true
+                });
             }
 
-            return navigator.geolocation.watchPosition(function (pos) {
-                var me = {lat: pos.coords.latitude, lng: pos.coords.longitude};
-                console.debug && console.debug('Me [update]', me);
-                callback(me);
-            }, function (err) {
-                console.error('geoloc watch', err);
-            }, {
-                maximumAge: 0,
-                enableHighAccuracy: true
-            });
         }
     };
 }]);
 
 angular.module('awesomelib').directive('alMap', [
     'stations', '$q', 'geoloc', '$location',
-    function (stations, $q, geoloc, $location) {
+    function(stations, $q, geoloc, $location) {
 
         var markerMe = null;
 
@@ -772,7 +842,7 @@ angular.module('awesomelib').directive('alMap', [
                 stations: '=',
                 meTo: '='
             },
-            link: function (scope, element, attrs) {
+            link: function(scope, element, attrs) {
 
                 var map = new google.maps.Map(element[0], {
                     zoom: 16,
@@ -781,7 +851,7 @@ angular.module('awesomelib').directive('alMap', [
                 var directionsRenderer = new google.maps.DirectionsRenderer();
                 var directionsService = new google.maps.DirectionsService();
 
-                scope.$watch('zoom', function (zoom) {
+                scope.$watch('zoom', function(zoom) {
                     if (zoom) {
                         map.set('zoom', zoom);
                     }
@@ -789,8 +859,8 @@ angular.module('awesomelib').directive('alMap', [
 
                 var markers = [];
 
-                scope.$watch('stations', function (stations) {
-                    markers.forEach(function (m) {
+                scope.$watch('stations', function(stations) {
+                    markers.forEach(function(m) {
                         m.setMap(null);
                     });
                     markers.length = 0;
@@ -799,16 +869,19 @@ angular.module('awesomelib').directive('alMap', [
                         return;
                     }
 
-                    stations.forEach(function (station) {
+                    stations.forEach(function(station) {
                         var marker = new google.maps.Marker({
                             map: map,
-                            position: {lat: station.lat, lng: station.lng},
+                            position: {
+                                lat: station.lat,
+                                lng: station.lng
+                            },
                             title: station.public_name,
                             icon: 'assets/img/car_orb.png'
                         });
 
-                        google.maps.event.addListener(marker, 'click', function () {
-                            scope.$apply(function () {
+                        google.maps.event.addListener(marker, 'click', function() {
+                            scope.$apply(function() {
                                 $location.path('/station/' + station.id);
                             });
                         });
@@ -818,7 +891,7 @@ angular.module('awesomelib').directive('alMap', [
 
                 });
 
-                scope.$watch('centerOn', function (center) {
+                scope.$watch('centerOn', function(center) {
                     google.maps.event.trigger(map, 'resize');
 
                     if (!center) {
@@ -826,18 +899,18 @@ angular.module('awesomelib').directive('alMap', [
                     }
 
                     ((center.lat && center.lng) ? $q.when(center) : geoloc.coordOf(center))
-                        .then(function (latlng) {
-                            map.panTo(latlng);
-                        });
+                    .then(function(latlng) {
+                        map.panTo(latlng);
+                    });
                 });
 
-                scope.$watch('meTo', function (target) {
+                scope.$watch('meTo', function(target) {
                     directionsRenderer.setMap(null);
                     if (!target) {
                         return;
                     }
 
-                    geoloc.me().then(function (me) {
+                    geoloc.me().then(function(me) {
                         var start = new google.maps.LatLng(me.lat, me.lng);
                         var end = new google.maps.LatLng(target.lat, target.lng);
                         var request = {
@@ -845,10 +918,10 @@ angular.module('awesomelib').directive('alMap', [
                             destination: end,
                             travelMode: google.maps.TravelMode.WALKING
                         };
-                        directionsService.route(request, function (response, status) {
+                        directionsService.route(request, function(directions, status) {
                             if (status == google.maps.DirectionsStatus.OK) {
                                 directionsRenderer.setMap(map);
-                                directionsRenderer.setDirections(response);
+                                directionsRenderer.setDirections(directions);
                                 map.set('zoom', 17);
                             }
                         });
@@ -856,7 +929,7 @@ angular.module('awesomelib').directive('alMap', [
 
                 });
 
-                var watchId = geoloc.watchMe(function (me) {
+                var watchId = geoloc.watchMe(function(me) {
                     displayMe(map, me);
 
                     if (scope.followMe) {
@@ -864,7 +937,7 @@ angular.module('awesomelib').directive('alMap', [
                     }
                 });
 
-                scope.$on('$destroy', function () {
+                scope.$on('$destroy', function() {
                     watchId && navigator.geolocation.clearWatch(watchId);
                 });
 
@@ -917,61 +990,65 @@ angular.module('awesomelib').service('reservation', [
 
 angular.module('awesomelib').service('stations', [
     '$http', '$q', 'geoloc',
-    function ($http, $q, geoloc) {
+    function($http, $q, geoloc) {
         return {
-            all: function () {
-                return $http.get('/api/v2/station').then(function (resp) {
+            all: function() {
+                return $http.get('/api/v2/station').then(function(resp) {
                     console.debug && console.debug('[HTTP] Stations ->', resp.data.results.length);
                     return resp.data.results;
                 });
             },
-            get: function (stationId) {
-                return $http.get('/api/v2/station/' + encodeURIComponent(stationId)).then(function (resp) {
-                    console.debug && console.debug('[HTTP] Stations ->', resp.data.results.length);
+            get: function(stationId) {
+                return $http.get('/api/v2/station/' + encodeURIComponent(stationId)).then(function(resp) {
+                    console.debug && console.debug('[HTTP] Station', stationId, '->', resp.data.results.length);
                     return resp.data.results;
                 });
             },
-            near: function (loc, filter) {
+            near: function(loc, filter) {
                 var _this = this;
-                filter = filter || function (s) {
-                        return s;
-                    };
+                filter = filter || function(s) {
+                    return s.cars > 0 || s.slots > 0;
+                };
 
                 return ((loc.lat && loc.lng) ? $q.when(loc) : geoloc.coordOf(loc))
-                    .then(function (latlng) {
+                    .then(function(latlng) {
                         loc = latlng;
                         return _this.all();
                     })
-                    .then(function (stations) {
-                        stations = stations.filter(filter);
+                    .then(function(_stations) {
+                        _stations = _stations.filter(filter);
 
-                        stations.forEach(function (s) {
-                            s.distance = Math.round(0.01 * geoloc.distance(s, loc)) / 10;
-                        });
-
-                        stations.sort(function (s1, s2) {
-                            return s1.distance < s2.distance ? -1 : 1;
-                        });
-
-                        var nearest = stations.slice(0, 10);
+                        var nearest = _this.sortedFrom(_stations, loc).slice(0, 10);
                         console.debug && console.debug('Near', loc, nearest);
 
                         return nearest;
                     });
             },
-            favourite: function () {
+            favourite: function() {
                 var _this = this;
 
-                return $http.get('/api/v2/favourite').then(function (resp) {
-                    console.debug && console.debug('[HTTP] Stations ->', resp.data.results.length);
-                    var stationIds = resp.data.results.map(function (s) {
+                return $http.get('/api/v2/favourite').then(function(resp) {
+                    console.debug && console.debug('[HTTP] Favourites ->', resp.data.results.length);
+                    var stationIds = resp.data.results.map(function(s) {
                         return s.id
                     }).join(',');
                     return _this.get(stationIds);
                 });
+            },
+            sortedFrom: function(stations, loc) {
+                var _stations = stations.map(function(s) {
+                    return (s.distance = Math.round(0.01 * geoloc.distance(s, loc)) / 10) && s;
+                });
+
+                _stations.sort(function(s1, s2) {
+                    return s1.distance < s2.distance ? -1 : 1;
+                });
+
+                return _stations;
             }
         };
-    }]);
+    }
+]);
 
 angular.module('awesomelib').service('subscription', [
   '$http',

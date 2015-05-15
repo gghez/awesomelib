@@ -1,27 +1,32 @@
 <div class="al-station">
-    <div class="al-station-actions clearfix pull-right">
-        <button class="btn btn-danger al-station-btn" ng-click="cancel()"
-                ng-if="res" title="Cancel reservation">
-            <span class="glyphicon glyphicon-thumbs-down"></span>
-            <span class="glyphicon glyphicon-time"></span>
-            <span al-count-down="res.seconds_before_expiration"></span>
-        </button>
+    <div class="al-station-header clearfix">
+        <div class="al-station-actions clearfix pull-right">
+            <button class="btn btn-danger al-station-btn" ng-click="cancel()" ng-if="res" title="Cancel reservation">
+                <span class="glyphicon glyphicon-thumbs-down"></span>
+                <span class="glyphicon glyphicon-time"></span>
+                <span al-count-down="res.seconds_before_expiration"></span>
+            </button>
 
-        <button class="btn btn-primary al-station-btn" ng-hide="res" ng-class="{'disabled': !station.cars}"
-                title="Click to reserve" ng-click="reserve('car', station.id)">Cars
-            <span class="badge">{{station.cars}}</span>
-        </button>
+            <button class="btn btn-primary al-station-btn" ng-hide="res" ng-class="{'disabled': !station.cars}" title="Click to reserve" ng-click="reserve('car', station.id)">Cars
+                <span class="badge">{{station.cars}}</span>
+            </button>
 
-        <button class="btn btn-primary al-station-btn" ng-hide="res" ng-class="{'disabled': !station.slots}"
-                title="Click to reserve" ng-click="reserve('park', station.id)">Parks
-            <span class="badge">{{station.slots}}</span>
-        </button>
+            <button class="btn btn-primary al-station-btn" ng-hide="res" ng-class="{'disabled': !station.slots}" title="Click to reserve" ng-click="reserve('park', station.id)">Parks
+                <span class="badge">{{station.slots}}</span>
+            </button>
+        </div>
+
+        <h3 class="al-station-name">{{station.public_name}}</h3>
     </div>
 
-    <h3 class="al-station-name">{{station.public_name}}</h3>
+
 
     <al-map center-on="station" me-to="station" stations="stations"></al-map>
 
-    <p class="text-right"><em><small>{{station.address}}, {{station.city}}</small></em></p>
+    <p class="text-right">
+        <em>
+            <small>{{station.address}}, {{station.city}}</small>
+        </em>
+    </p>
 
 </div>

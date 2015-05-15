@@ -24,13 +24,5 @@ angular.module('awesomelib').controller('pendingController', [
         }
 
         load();
-
-        $scope.cancel = function (type, reservationId) {
-            reservation.cancel(type, reservationId).then(load);
-        };
-
-        $scope.reserve = function (type, stationId) {
-            return reservation.reserve(type, stationId).then(load);
-        };
     }
 ]);
