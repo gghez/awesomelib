@@ -25,7 +25,7 @@ module.exports = function(username, password) {
 };
 ```
 
-Will be replaced by a configuration file as soon as possible.
+*PS: Will be replaced by a configuration file as soon as possible.*
 
 ## Examples
 
